@@ -21,7 +21,7 @@ Content-Type: application/json
 ### 민원 접수
 POST http://localhost:3000/api/complaints
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJjaXRpemVuQHRlc3QuY29tIiwicm9sZSI6IkNJVElaRU4iLCJpYXQiOjE3OTM5NDc5MDUsImV4cCI6MTc5NDAzNDMwNX0.jy05jvcjuY72DZEKl0UdAY5HEwt3raTQGMB0hp27I9k
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwiZW1haWwiOiJjaXRpemVuQHRlc3QuY29tIiwicm9sZSI6IkNJVElaRU4iLCJpYXQiOjE3OTQyODQ3MTMsImV4cCI6MTc5NDM3MTExM30.0pdLd2ijwQoU0_hQNFeZ_mGrA9_37-JoBrNl-5bZ7Kk
 
 {
   "title": "도로에 구멍이 생겼어요",
@@ -29,3 +29,106 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiO
   "location": "서울시 강남구 테헤란로 123",
   "category_id": 1
 }
+
+### 담당자 회원가입
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "테스트담당자",
+  "email": "officer@test.com",
+  "password": "1234",
+  "role": "OFFICER"
+}
+
+###  담당자 로그인
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "officer@test.com",
+  "password": "1234"
+}
+
+### AI 분류 실행
+POST http://localhost:3000/api/complaints/1/classify
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJvZmZpY2VyQHRlc3QuY29tIiwicm9sZSI6Ik9GRklDRVIiLCJpYXQiOjE3OTQyODQ2NTUsImV4cCI6MTc5NDM3MTA1NX0.0I8Am2-ThEk6freb1lReZ2_TRcvOE1ojOf9xt7n-9RI
+
+{}
+
+### 상태 변경 (SUBMITTED → ASSIGNED)
+PATCH http://localhost:3000/api/complaints/1/status
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJvZmZpY2VyQHRlc3QuY29tIiwicm9sZSI6Ik9GRklDRVIiLCJpYXQiOjE3OTQyODQ2NTUsImV4cCI6MTc5NDM3MTA1NX0.0I8Am2-ThEk6freb1lReZ2_TRcvOE1ojOf9xt7n-9RI
+
+{
+  "next_status": "ASSIGNED",
+  "memo": "AI 분류 확인 후 배정"
+}
+
+### 처리 이력 조회
+GET http://localhost:3000/api/complaints/1/history
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJvZmZpY2VyQHRlc3QuY29tIiwicm9sZSI6Ik9GRklDRVIiLCJpYXQiOjE3OTQyODQ2NTUsImV4cCI6MTc5NDM3MTA1NX0.0I8Am2-ThEk6freb1lReZ2_TRcvOE1ojOf9xt7n-9RI
+
+### 상태 변경 (ASSIGNED → PROCESSING)
+PATCH http://localhost:3000/api/complaints/1/status
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJvZmZpY2VyQHRlc3QuY29tIiwicm9sZSI6Ik9GRklDRVIiLCJpYXQiOjE3OTQyODQ2NTUsImV4cCI6MTc5NDM3MTA1NX0.0I8Am2-ThEk6freb1lReZ2_TRcvOE1ojOf9xt7n-9RI
+
+{
+  "next_status": "PROCESSING",
+  "memo": "처리 시작"
+}
+
+### AI 답변 초안 생성
+POST http://localhost:3000/api/complaints/1/answer/draft
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJvZmZpY2VyQHRlc3QuY29tIiwicm9sZSI6Ik9GRklDRVIiLCJpYXQiOjE3OTQyODQ2NTUsImV4cCI6MTc5NDM3MTA1NX0.0I8Am2-ThEk6freb1lReZ2_TRcvOE1ojOf9xt7n-9RI
+
+{}
+
+### 최종 답변 확정
+POST http://localhost:3000/api/complaints/1/answer/final
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJvZmZpY2VyQHRlc3QuY29tIiwicm9sZSI6Ik9GRklDRVIiLCJpYXQiOjE3OTQyODQ2NTUsImV4cCI6MTc5NDM3MTA1NX0.0I8Am2-ThEk6freb1lReZ2_TRcvOE1ojOf9xt7n-9RI
+
+{
+  "content": "안녕하세요. 도로관리과입니다. 접수하신 도로 파손 민원을 확인하여 처리 완료하였습니다. 불편을 드려 죄송합니다."
+}
+
+### 답변 조회
+GET http://localhost:3000/api/complaints/1/answer
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJvZmZpY2VyQHRlc3QuY29tIiwicm9sZSI6Ik9GRklDRVIiLCJpYXQiOjE3OTQyODQ2NTUsImV4cCI6MTc5NDM3MTA1NX0.0I8Am2-ThEk6freb1lReZ2_TRcvOE1ojOf9xt7n-9RI
+
+### 관리자 회원가입
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "테스트관리자",
+  "email": "admin@test.com",
+  "password": "1234",
+  "role": "ADMIN"
+}
+
+### 관리자 로그인
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.com",
+  "password": "1234"
+}
+
+### 전체 요약 통계
+GET http://localhost:3000/api/stats/summary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTEsImVtYWlsIjoiYWRtaW5AdGVzdC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3OTQyODU5MTMsImV4cCI6MTc5NDM3MjMxM30.M18AfnYPu2AExK78tk9pQd1X9o-HjVJVtEQuzZTnaOA
+
+### 유형별 통계
+GET http://localhost:3000/api/stats/category
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTEsImVtYWlsIjoiYWRtaW5AdGVzdC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3OTQyODU5MTMsImV4cCI6MTc5NDM3MjMxM30.M18AfnYPu2AExK78tk9pQd1X9o-HjVJVtEQuzZTnaOA
+
+### 상태별 통계
+GET http://localhost:3000/api/stats/status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTEsImVtYWlsIjoiYWRtaW5AdGVzdC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3OTQyODU5MTMsImV4cCI6MTc5NDM3MjMxM30.M18AfnYPu2AExK78tk9pQd1X9o-HjVJVtEQuzZTnaOA
