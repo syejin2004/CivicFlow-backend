@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicFlow 데모</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Malgun Gothic', sans-serif; background: #f5f5f5; }
+    
+    header {
+      background: #1a1a2e;
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    header h1 { font-size: 24px; }
+    header p { font-size: 13px; color: #aaa; margin-top: 4px; }
+
+    .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+
+    .steps {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    .step-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      background: #ddd;
+      color: #666;
+      transition: all 0.2s;
+    }
+    .step-btn.active { background: #1a1a2e; color: white; }
+    .step-btn.done { background: #4CAF50; color: white; }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #1a1a2e;
+      border-bottom: 2px solid #1a1a2e;
+      padding-bottom: 10px;
+    }
+
+    .form-group { margin-bottom: 15px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .form-group textarea { height: 100px; resize: none; }
+
+    .btn {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: bold;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #1a1a2e; color: white; }
+    .btn-primary:hover { background: #2d2d44; }
+    .btn-success { background: #4CAF50; color: white; }
+    .btn-warning { background: #FF9800; color: white; }
+    .btn-info { background: #2196F3; color: white; }
+
+    .result-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f8f8;
+      border-radius: 8px;
+      border-left: 4px solid #1a1a2e;
+      display: none;
+    }
+    .result-box.show { display: block; }
+    .result-box.success { border-left-color: #4CAF50; }
+    .result-box.error { border-left-color: #f44336; background: #fff3f3; }
+
+    .result-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .result-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .badge-submitted { background: #e3f2fd; color: #1565c0; }
+    .badge-assigned { background: #fff3e0; color: #e65100; }
+    .badge-processing { background: #f3e5f5; color: #6a1b9a; }
+    .badge-completed { background: #e8f5e9; color: #2e7d32; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #f8f8f8;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-card .number {
+      font-size: 36px;
+      font-weight: bold;
+      color: #1a1a2e;
+    }
+    .stat-card .label {
+      font-size: 13px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .flow-arrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .flow-item {
+      padding: 8px 16px;
+      background: #1a1a2e;
+      color: white;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+    .flow-item.current { background: #4CAF50; }
+    .arrow { color: #999; font-size: 20px; }
+
+    .token-display {
+      background: #f0f0f0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #666;
+      word-break: break-all;
+      margin-top: 10px;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .tab-menu {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      padding: 8px 20px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .tab-btn.active {
+      background: #1a1a2e;
+      color: white;
+      border-color: #1a1a2e;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🏛️ CivicFlow</h1>
+    <p>공공기관용 민원·생활불편 접수 분석 및 답변 지원 시스템</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 진행 단계 -->
+  <div class="steps">
+    <button class="step-btn active" onclick="showSection('login')">① 로그인</button>
+    <button class="step-btn" id="step2" onclick="showSection('complaint')">② 민원 접수</button>
+    <button class="step-btn" id="step3" onclick="showSection('classify')">③ AI 분류</button>
+    <button class="step-btn" id="step4" onclick="showSection('status')">④ 상태 관리</button>
+    <button class="step-btn" id="step5" onclick="showSection('answer')">⑤ 답변 생성</button>
+    <button class="step-btn" id="step6" onclick="showSection('stats')">⑥ 통계</button>
+  </div>
+
+  <!-- ① 로그인 -->
+  <div class="section active" id="section-login">
+    <div class="card">
+      <h2>① 로그인 / 회원가입</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div class="form-group">
+            <label>이메일</label>
+            <input type="email" id="login-email" value="officer@test.com">
+          </div>
+          <div class="form-group">
+            <label>비밀번호</label>
+            <input type="password" id="login-password" value="1234">
+          </div>
+          <button class="btn btn-primary" onclick="login()">로그인</button>
+        </div>
+        <div>
+          <div class="form-group">
+            <label>이름</label>
+            <input type="text" id="reg-username" placeholder="홍길동">
+          </div>
+          <div class="form-group">
+            <label>이메일</label>
+            <input type="email" id="reg-email" placeholder="test@test.com">
+          </div>
+          <div class="form-group">
+            <label>비밀번호</label>
+            <input type="password" id="reg-password" placeholder="비밀번호">
+          </div>
+          <div class="form-group">
+            <label>역할</label>
+            <select id="reg-role">
+              <option value="CITIZEN">시민</option>
+              <option value="OFFICER">담당자</option>
+              <option value="ADMIN">관리자</option>
+            </select>
+          </div>
+          <button class="btn btn-info" onclick="register()">회원가입</button>
+        </div>
+      </div>
+      <div class="result-box" id="login-result">
+        <div class="result-title">결과</div>
+        <div class="result-content" id="login-result-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 민원 접수 -->
+  <div class="section" id="section-complaint">
+    <div class="card">
+      <h2>② 민원 접수 (F-01)</h2>
+      <div class="form-group">
+        <label>민원 제목</label>
+        <input type="text" id="complaint-title" value="도로에 구멍이 생겼어요">
+      </div>
+      <div class="form-group">
+        <label>민원 내용</label>
+        <textarea id="complaint-content">강남구 테헤란로 앞 도로에 큰 구멍이 생겨서 차가 지나갈 때마다 위험합니다. 빠른 처리 부탁드립니다.</textarea>
+      </div>
+      <div class="form-group">
+        <label>발생 위치</label>
+        <input type="text" id="complaint-location" value="서울시 강남구 테헤란로 123">
+      </div>
+      <button class="btn btn-primary" onclick="submitComplaint()">민원 접수</button>
+      <div class="result-box" id="complaint-result">
+        <div class="result-title">결과</div>
+        <div class="result-content" id="complaint-result-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ AI 분류 -->
+  <div class="section" id="section-classify">
+    <div class="card">
+      <h2>③ AI 기반 민원 분류 (F-02)</h2>
+      <p style="color:#666;margin-bottom:20px;font-size:14px;">
+        민원 내용을 분석하여 유형과 담당 부서를 자동으로 분류합니다.
+        (Strategy 패턴: AI 분류 → 키워드 분류 Fallback)
+      </p>
+      <div class="form-group">
+        <label>민원 ID</label>
+        <input type="number" id="classify-id" value="1">
+      </div>
+      <button class="btn btn-warning" onclick="classifyComplaint()">AI 분류 실행</button>
+      <div class="result-box" id="classify-result">
+        <div class="result-title">AI 분류 결과</div>
+        <div class="result-content" id="classify-result-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 상태 관리 -->
+  <div class="section" id="section-status">
+    <div class="card">
+      <h2>④ 민원 상태 관리 (F-03)</h2>
+      <p style="color:#666;margin-bottom:20px;font-size:14px;">
+        State 패턴 적용: 허용된 상태 전환만 가능합니다.
+      </p>
+      <div class="flow-arrow">
+        <span class="flow-item">SUBMITTED</span>
+        <span class="arrow">→</span>
+        <span class="flow-item">ASSIGNED</span>
+        <span class="arrow">→</span>
+        <span class="flow-item">PROCESSING</span>
+        <span class="arrow">→</span>
+        <span class="flow-item">COMPLETED</span>
+        <span class="arrow">/</span>
+        <span class="flow-item">REJECTED</span>
+      </div>
+      <div class="form-group">
+        <label>민원 ID</label>
+        <input type="number" id="status-id" value="1">
+      </div>
+      <div class="form-group">
+        <label>변경할 상태</label>
+        <select id="next-status">
+          <option value="ASSIGNED">ASSIGNED (배정)</option>
+          <option value="PROCESSING">PROCESSING (처리중)</option>
+          <option value="COMPLETED">COMPLETED (완료)</option>
+          <option value="REJECTED">REJECTED (반려)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>메모</label>
+        <input type="text" id="status-memo" value="처리 진행중">
+      </div>
+      <button class="btn btn-warning" onclick="updateStatus()">상태 변경</button>
+      <div class="result-box" id="status-result">
+        <div class="result-title">결과</div>
+        <div class="result-content" id="status-result-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 답변 생성 -->
+  <div class="section" id="section-answer">
+    <div class="card">
+      <h2>⑤ AI 답변 초안 생성 (F-04)</h2>
+      <div class="form-group">
+        <label>민원 ID</label>
+        <input type="number" id="answer-id" value="1">
+      </div>
+      <button class="btn btn-info" onclick="generateDraft()">AI 초안 생성</button>
+      <div class="result-box" id="draft-result">
+        <div class="result-title">AI 생성 답변 초안</div>
+        <div class="result-content" id="draft-result-content"></div>
+      </div>
+      <div id="confirm-area" style="display:none;margin-top:20px;">
+        <div class="form-group">
+          <label>최종 답변 (수정 가능)</label>
+          <textarea id="final-answer" style="height:120px;"></textarea>
+        </div>
+        <button class="btn btn-success" onclick="confirmAnswer()">답변 확정</button>
+        <div class="result-box" id="answer-result">
+          <div class="result-title">결과</div>
+          <div class="result-content" id="answer-result-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 통계 -->
+  <div class="section" id="section-stats">
+    <div class="card">
+      <h2>⑥ 민원 통계 대시보드 (F-05)</h2>
+      <button class="btn btn-primary" onclick="loadStats()" style="margin-bottom:20px;">통계 불러오기</button>
+
+      <div class="stats-grid" id="stats-summary">
+        <div class="stat-card">
+          <div class="number" id="stat-total">-</div>
+          <div class="label">전체 민원</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="stat-completed" style="color:#4CAF50;">-</div>
+          <div class="label">완료</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="stat-processing" style="color:#FF9800;">-</div>
+          <div class="label">처리중</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="stat-submitted" style="color:#2196F3;">-</div>
+          <div class="label">접수</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <h3 style="margin-bottom:10px;font-size:15px;">유형별 현황</h3>
+          <div id="category-stats"></div>
+        </div>
+        <div>
+          <h3 style="margin-bottom:10px;font-size:15px;">상태별 현황</h3>
+          <div id="status-stats"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const BASE_URL = 'https://civicflow-production.up.railway.app/api';
+  let token = '';
+  let userRole = '';
+  let complaintId = 1;
+
+  function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    document.querySelectorAll('.step-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+
+  function showResult(id, content, type = 'success') {
+    const box = document.getElementById(id);
+    const contentEl = document.getElementById(id + '-content');
+    box.className = 'result-box show ' + type;
+    contentEl.innerHTML = content;
+  }
+
+  async function register() {
+    const username = document.getElementById('reg-username').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+    const role = document.getElementById('reg-role').value;
+    try {
+      const res = await fetch(`${BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password, role })
+      });
+      const data = await res.json();
+      showResult('login-result', `✅ ${data.message}`, res.ok ? 'success' : 'error');
+    } catch (e) {
+      showResult('login-result', '❌ 서버 연결 실패. 서버가 실행중인지 확인하세요.', 'error');
+    }
+  }
+
+  async function login() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    try {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        token = data.token;
+        userRole = data.user.role;
+        showResult('login-result',
+          `✅ 로그인 성공!<br>
+          👤 이름: ${data.user.username}<br>
+          📧 이메일: ${data.user.email}<br>
+          🔑 역할: <strong>${data.user.role}</strong><br>
+          <div class="token-display">Token: ${token.substring(0, 50)}...</div>`,
+          'success');
+        document.getElementById('step2').classList.add('done');
+        document.getElementById('step3').classList.add('done');
+        document.getElementById('step4').classList.add('done');
+        document.getElementById('step5').classList.add('done');
+        document.getElementById('step6').classList.add('done');
+      } else {
+        showResult('login-result', `❌ ${data.message}`, 'error');
+      }
+    } catch (e) {
+      showResult('login-result', '❌ 서버 연결 실패. 서버가 실행중인지 확인하세요.', 'error');
+    }
+  }
+
+  async function submitComplaint() {
+    const title = document.getElementById('complaint-title').value;
+    const content = document.getElementById('complaint-content').value;
+    const location = document.getElementById('complaint-location').value;
+    try {
+      const res = await fetch(`${BASE_URL}/complaints`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ title, content, location, category_id: 1 })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showResult('complaint-result',
+          `✅ ${data.message}<br>
+          📋 제목: ${title}<br>
+          📍 위치: ${location}<br>
+          🔄 상태: <span class="badge badge-submitted">SUBMITTED</span>`,
+          'success');
+      } else {
+        showResult('complaint-result', `❌ ${data.message}<br>${data.error || ''}`, 'error');
+      }
+    } catch (e) {
+      showResult('complaint-result', '❌ 서버 연결 실패', 'error');
+    }
+  }
+
+  async function classifyComplaint() {
+    const id = document.getElementById('classify-id').value;
+    try {
+      const res = await fetch(`${BASE_URL}/complaints/${id}/classify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showResult('classify-result',
+          `✅ ${data.message}<br>
+          📂 유형: <strong>${data.result.category}</strong><br>
+          🏢 담당부서: <strong>${data.result.department}</strong><br>
+          💡 분류 방식: ${data.result.reason}`,
+          'success');
+      } else {
+        showResult('classify-result', `❌ ${data.message}`, 'error');
+      }
+    } catch (e) {
+      showResult('classify-result', '❌ 서버 연결 실패', 'error');
+    }
+  }
+
+  async function updateStatus() {
+    const id = document.getElementById('status-id').value;
+    const next_status = document.getElementById('next-status').value;
+    const memo = document.getElementById('status-memo').value;
+    try {
+      const res = await fetch(`${BASE_URL}/complaints/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ next_status, memo })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showResult('status-result',
+          `✅ ${data.message}<br>
+          🔄 ${data.previous_status} → <strong>${data.next_status}</strong>`,
+          'success');
+      } else {
+        showResult('status-result', `❌ ${data.message}`, 'error');
+      }
+    } catch (e) {
+      showResult('status-result', '❌ 서버 연결 실패', 'error');
+    }
+  }
+
+  async function generateDraft() {
+    const id = document.getElementById('answer-id').value;
+    try {
+      const res = await fetch(`${BASE_URL}/complaints/${id}/answer/draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showResult('draft-result', `✅ ${data.message}<br><br>${data.draft.replace(/\n/g, '<br>')}`, 'success');
+        document.getElementById('final-answer').value = data.draft;
+        document.getElementById('confirm-area').style.display = 'block';
+      } else {
+        showResult('draft-result', `❌ ${data.message}`, 'error');
+      }
+    } catch (e) {
+      showResult('draft-result', '❌ 서버 연결 실패', 'error');
+    }
+  }
+
+  async function confirmAnswer() {
+    const id = document.getElementById('answer-id').value;
+    const content = document.getElementById('final-answer').value;
+    try {
+      const res = await fetch(`${BASE_URL}/complaints/${id}/answer/final`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ content })
+      });
+      const data = await res.json();
+      showResult('answer-result', `✅ ${data.message}`, res.ok ? 'success' : 'error');
+    } catch (e) {
+      showResult('answer-result', '❌ 서버 연결 실패', 'error');
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const [summary, category, status] = await Promise.all([
+        fetch(`${BASE_URL}/stats/summary`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${BASE_URL}/stats/category`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${BASE_URL}/stats/status`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+      ]);
+
+      document.getElementById('stat-total').textContent = summary.total || 0;
+      document.getElementById('stat-completed').textContent = summary.completed || 0;
+      document.getElementById('stat-processing').textContent = summary.processing || 0;
+      document.getElementById('stat-submitted').textContent = summary.submitted || 0;
+
+      const catEl = document.getElementById('category-stats');
+      catEl.innerHTML = Array.isArray(category) ? category.map(c =>
+        `<div style="display:flex;justify-content:space-between;padding:8px;background:#f8f8f8;border-radius:6px;margin-bottom:6px;">
+          <span>${c.category}</span><strong>${c.count}건</strong>
+        </div>`
+      ).join('') : '<p>데이터 없음</p>';
+
+      const statEl = document.getElementById('status-stats');
+      statEl.innerHTML = Array.isArray(status) ? status.map(s =>
+        `<div style="display:flex;justify-content:space-between;padding:8px;background:#f8f8f8;border-radius:6px;margin-bottom:6px;">
+          <span>${s.status}</span><strong>${s.count}건</strong>
+        </div>`
+      ).join('') : '<p>데이터 없음</p>';
+
+    } catch (e) {
+      alert('통계 로드 실패. 관리자 계정으로 로그인했는지 확인하세요.');
+    }
+  }
+</script>
+</body>
+</html>
