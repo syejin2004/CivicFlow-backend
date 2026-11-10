@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
-require('dotenv').config();
+
 
 // 회원가입
 const register = async (req, res) => {
