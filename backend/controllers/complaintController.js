@@ -6,14 +6,14 @@ const createComplaint = async (req, res) => {
   const citizen_id = req.user.id;
 
   try {
-    await db.query(
+    const [result] = await db.query(
       `INSERT INTO complaints 
        (citizen_id, title, content, location, category_id, status) 
        VALUES (?, ?, ?, ?, ?, 'SUBMITTED')`,
       [citizen_id, title, content, location, category_id]
     );
 
-    res.status(201).json({ message: '민원 접수 완료' });
+    res.status(201).json({ message: '민원 접수 완료', id: result.insertId });
   } catch (err) {
     res.status(500).json({ message: '민원 접수 실패', error: err.message });
   }
