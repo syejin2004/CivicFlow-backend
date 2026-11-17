@@ -11,7 +11,7 @@
 ## 기술 스택
 - Frontend: React, Recharts
 - Backend: Node.js, Express
-- DB: MySQL (XAMPP)
+- DB: MySQL (Railway)
 - AI: Google Gemini API
 - 인증: JWT
 
