@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { findValidDepartment, assertValidCategoryId, ReferenceDataError } = require('../services/referenceService');
 require('dotenv').config();
 
 // 키워드 기반 분류 (Strategy 패턴 - Fallback)
@@ -104,30 +105,83 @@ const classifyComplaint = async (req, res) => {
   }
 };
 
-// 담당자가 AI 분류 확정
+// 담당자가 최종 담당 부서(및 분야) 확정 - AI 추천(ai_department)은 그대로 두고 department_id 에 확정값 저장
 const confirmClassify = async (req, res) => {
   const { id } = req.params;
   const { category_id, department_id } = req.body;
 
+  let department;
+  let categoryId = null;
   try {
-    await db.query(
-      `UPDATE complaints 
-       SET category_id = ?, department_id = ?, status = 'ASSIGNED'
-       WHERE id = ?`,
-      [category_id, department_id, id]
-    );
-
-    // 처리 이력 기록
-    await db.query(
-      `INSERT INTO process_history 
-       (complaint_id, actor_id, previous_status, next_status, memo)
-       VALUES (?, ?, 'SUBMITTED', 'ASSIGNED', 'AI 분류 확정')`,
-      [id, req.user.id]
-    );
-
-    res.json({ message: '분류 확정 완료' });
+    department = await findValidDepartment(department_id);
+    if (category_id !== undefined && category_id !== null && category_id !== '') {
+      categoryId = await assertValidCategoryId(category_id);
+    }
   } catch (err) {
+    if (err instanceof ReferenceDataError) return res.status(400).json({ message: err.message, data: null });
+    return res.status(500).json({ message: '확정 실패', error: err.message });
+  }
+
+  let conn;
+  try {
+    conn = await db.getConnection();
+    await conn.beginTransaction();
+
+    const [rows] = await conn.query(
+      'SELECT id, status, department_id, ai_department FROM complaints WHERE id = ? FOR UPDATE', [id]
+    );
+    if (rows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ message: '민원 없음', data: null });
+    }
+
+    // UPDATE 전에 이전 값을 복사해 두어 처리 이력이 항상 변경 전 상태로 기록되도록 함
+    const complaint = { ...rows[0] };
+    if (['COMPLETED', 'REJECTED'].includes(complaint.status)) {
+      await conn.rollback();
+      return res.status(400).json({ message: '처리가 끝난 민원은 담당 부서를 변경할 수 없습니다.', data: null });
+    }
+
+    // 접수 상태면 배정완료로 전환, 이미 진행 중이면 상태 유지
+    const nextStatus = complaint.status === 'SUBMITTED' ? 'ASSIGNED' : complaint.status;
+
+    // category_id 를 보내지 않으면 기존 분야 유지
+    await conn.query(
+      `UPDATE complaints
+       SET department_id = ?, category_id = COALESCE(?, category_id), status = ?
+       WHERE id = ?`,
+      [department.id, categoryId, nextStatus, id]
+    );
+
+    const aiNote = complaint.ai_department
+      ? (complaint.ai_department === department.dept_name ? ' (AI 추천 부서와 동일)' : ` (AI 추천 부서 ${complaint.ai_department} 대신 지정)`)
+      : '';
+    const action = complaint.department_id ? '담당 부서 변경' : '담당 부서 확정';
+
+    await conn.query(
+      `INSERT INTO process_history
+       (complaint_id, actor_id, previous_status, next_status, memo)
+       VALUES (?, ?, ?, ?, ?)`,
+      [id, req.user.id, complaint.status, nextStatus, `${action}: ${department.dept_name}${aiNote}`]
+    );
+
+    await conn.commit();
+
+    res.json({
+      message: '담당 부서 확정 완료',
+      data: {
+        id: Number(id),
+        department_id: department.id,
+        department_name: department.dept_name,
+        ai_department: complaint.ai_department,
+        status: nextStatus,
+      },
+    });
+  } catch (err) {
+    if (conn) await conn.rollback().catch(() => {});
     res.status(500).json({ message: '확정 실패', error: err.message });
+  } finally {
+    if (conn) conn.release();
   }
 };
 

@@ -7,3 +7,9 @@ node_modules/
 dist/
 .env
 .env.local
+node_modules/
+dist/
+.vite/
+.env
+.env.*
+!.env.example

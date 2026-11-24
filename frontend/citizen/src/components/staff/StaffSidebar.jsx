@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
+// 민원 담당자 메뉴
 const STAFF_NAV = [
   { id:'dash',    label:'대시보드' },
   { id:'list',    label:'내 민원 조회' },
@@ -12,6 +12,7 @@ const STAFF_NAV = [
   { id:'setting', label:'설정' },
 ]
 
+// 부서 관리자 메뉴
 const MANAGER_NAV = [
   { id:'dash',       label:'대시보드' },
   { id:'all-list',   label:'전체 민원 관리' },
@@ -24,10 +25,8 @@ const MANAGER_NAV = [
 ]
 
 export default function StaffSidebar({ page, setPage }) {
-  const { user, logout } = useAuth();
-  const [showPopup, setShowPopup] = useState(false);
+  const { user } = useAuth();
   const NAV = user?.role === 'manager' ? MANAGER_NAV : STAFF_NAV;
-
   return (
     <div className="staff-sidebar">
       <div className="staff-sidebar-logo">
@@ -40,46 +39,19 @@ export default function StaffSidebar({ page, setPage }) {
             key={n.id}
             className={`sn-item${page===n.id?' active':''}`}
             onClick={() => setPage(n.id)}
+            style={n.badge ? {display:'flex',justifyContent:'space-between',alignItems:'center'} : {}}
           >
             <span>{n.label}</span>
           </div>
         ))}
       </nav>
-
-      {/* 유저 정보 팝업 */}
-      {showPopup && (
-        <div style={{
-          position: 'absolute', bottom: '80px', left: '12px', right: '12px',
-          background: '#fff', border: '1px solid #e2e6ec', borderRadius: '10px',
-          padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100
-        }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>{user?.name}</div>
-          <div style={{ fontSize: '12px', color: '#778090', marginBottom: '4px' }}>{user?.email}</div>
-          <div style={{ fontSize: '12px', color: '#778090', marginBottom: '12px' }}>
-            {user?.role === 'manager' ? '부서 관리자' : '민원 담당자'}
-          </div>
-          <div style={{ borderTop: '1px solid #e2e6ec', paddingTop: '10px' }}>
-            <div
-              onClick={() => { setShowPopup(false); logout(); }}
-              style={{ fontSize: '13px', color: '#e23b45', fontWeight: 600, cursor: 'pointer', padding: '4px 0' }}
-            >
-              로그아웃
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div
-        className="staff-user"
-        onClick={() => setShowPopup(v => !v)}
-        style={{ cursor: 'pointer' }}
-      >
-        <div className="su-av">{user?.name?.charAt(0)}</div>
+      <div className="staff-user">
+        <div className="su-av">김</div>
         <div>
-          <div className="su-name">{user?.name}</div>
-          <div className="su-role">{user?.role === 'manager' ? '부서 관리자' : '민원 담당자'}</div>
+          <div className="su-name">김민지</div>
+          <div className="su-role">도로관리과 (인천시청)</div>
         </div>
       </div>
     </div>
-  );
+  )
 }

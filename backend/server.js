@@ -8,6 +8,11 @@ const cors = require('cors');
 const app = express();
 
 app.use(cors({ origin: '*' }));
+
+// AI 이미지 분석은 base64 이미지를 받으므로 기본 JSON 파서보다 먼저 큰 용량으로 등록
+const aiRoutes = require('./routes/aiRoutes');
+app.use('/api/ai', express.json({ limit: '15mb' }), aiRoutes);
+
 app.use(express.json());
 
 const authRoutes = require('./routes/authRoutes');
@@ -16,6 +21,7 @@ const classifyRoutes = require('./routes/classifyRoutes');
 const statusRoutes = require('./routes/statusRoutes');
 const answerRoutes = require('./routes/answerRoutes');
 const statsRoutes = require('./routes/statsRoutes');
+const departmentRoutes = require('./routes/departmentRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
@@ -23,6 +29,7 @@ app.use('/api/complaints', classifyRoutes);
 app.use('/api/complaints', statusRoutes);
 app.use('/api/complaints', answerRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/departments', departmentRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: '민원 시스템 서버 실행중!' });

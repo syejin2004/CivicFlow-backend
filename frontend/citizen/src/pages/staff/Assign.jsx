@@ -1,18 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useComplaints } from '../../contexts/ComplaintContext';
+import { API_BASE_URL } from '../../config/api';
 
-const BASE_URL = 'https://civicflow-production.up.railway.app/api';
+const BASE_URL = API_BASE_URL;
 const getToken = () => localStorage.getItem('civicflow_token');
 
 export default function Assign() {
-  const { complaints, updateComplaintStatus } = useComplaints();
+  const { complaints, departments, fetchDepartments, confirmDepartment } = useComplaints();
   const [staff, setStaff] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState('');
+  const [selectedDept, setSelectedDept] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
     fetchStaff();
+    if (departments.length === 0) fetchDepartments();
   }, []);
+
+  // 민원 선택 시 AI 추천 부서를 기본 선택
+  useEffect(() => {
+    if (!selectedComplaint) return;
+    const aiDept = departments.find(d => d.dept_name === selectedComplaint.ai_department);
+    setSelectedDept(aiDept ? String(aiDept.id) : '');
+  }, [selectedComplaint?.id, departments]);
 
   const fetchStaff = async () => {
     try {
@@ -32,16 +43,24 @@ export default function Assign() {
     c.status === 'SUBMITTED'
   );
 
+  // 담당 부서 확정(PATCH /:id/confirm, 상태 SUBMITTED → ASSIGNED) 후 담당자 배정 안내
   const handleAssign = async () => {
-    if (!selectedComplaint || !selectedStaff) {
-      alert('민원과 담당자를 선택해주세요.');
+    if (!selectedComplaint || !selectedDept || !selectedStaff) {
+      alert('민원, 담당 부서, 담당자를 모두 선택해주세요.');
       return;
     }
-    await updateComplaintStatus(selectedComplaint.id, 'ASSIGNED');
+    setIsAssigning(true);
+    const result = await confirmDepartment(selectedComplaint.id, Number(selectedDept));
+    setIsAssigning(false);
+    if (!result.success) {
+      alert(result.message);
+      return;
+    }
     const staffMember = staff.find(s => s.id === parseInt(selectedStaff));
-    alert(`${staffMember?.username}에게 배정되었습니다.`);
+    alert(`담당 부서: ${result.data?.department_name}\n${staffMember?.username}에게 배정되었습니다.`);
     setSelectedComplaint(null);
     setSelectedStaff('');
+    setSelectedDept('');
   };
 
   return (
@@ -101,7 +120,26 @@ export default function Assign() {
                   <div><strong>번호:</strong> {selectedComplaint.id}</div>
                   <div><strong>제목:</strong> {selectedComplaint.title}</div>
                   <div><strong>AI 분류:</strong> {selectedComplaint.ai_category || '미분류'}</div>
+                  <div><strong>AI 추천 부서:</strong> {selectedComplaint.ai_department || '-'}</div>
                 </div>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+                  담당 부서 확정 <span style={{ color: '#e23b45' }}>*</span>
+                </label>
+                <select
+                  value={selectedDept}
+                  onChange={(e) => setSelectedDept(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit' }}
+                >
+                  <option value="">담당 부서를 선택하세요</option>
+                  {departments.map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.dept_name}{d.dept_name === selectedComplaint.ai_department ? ' (AI 추천)' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ marginBottom: '20px' }}>
@@ -138,9 +176,10 @@ export default function Assign() {
 
               <button
                 onClick={handleAssign}
+                disabled={isAssigning}
                 style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', background: '#1555a4', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
               >
-                배정하기
+                {isAssigning ? '배정 중...' : '배정하기'}
               </button>
             </>
           ) : (

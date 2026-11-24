@@ -9,7 +9,6 @@ export default function Result() {
   const { user } = useAuth();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     if (user) fetchMyComplaints();
@@ -60,103 +59,42 @@ export default function Result() {
         <div className="breadcrumb">
           <span onClick={() => navigate('/')}>홈</span>
           <span className="sep">›</span>
-          <span onClick={() => setSelected(null)} style={{ cursor: selected ? 'pointer' : 'default' }}>민원결과조회</span>
-          {selected && <><span className="sep">›</span><span>상세보기</span></>}
+          <span>민원결과조회</span>
         </div>
+        <h1 className="pg-title">민원결과조회</h1>
+        <p className="pg-desc">신청하신 민원의 처리 진행상황을 확인할 수 있습니다.</p>
 
-        {selected ? (
-          <>
-            <h1 className="pg-title">민원 상세정보</h1>
-            <div style={{ background: '#fff', border: '1px solid #e2e6ec', borderRadius: '12px', padding: '30px', marginTop: '20px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '4px' }}>민원번호</div>
-                  <div style={{ fontSize: '14px', fontWeight: 600 }}>{selected.id}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '4px' }}>처리상태</div>
-                  <span className={`status-badge ${getStatusLabel(selected.status).cls}`}>{getStatusLabel(selected.status).label}</span>
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '4px' }}>신청일</div>
-                  <div style={{ fontSize: '14px' }}>{selected.created_at?.split('T')[0]}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '4px' }}>발생 위치</div>
-                  <div style={{ fontSize: '14px' }}>{selected.location || '-'}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '4px' }}>AI 분류</div>
-                  <div style={{ fontSize: '14px' }}>{selected.ai_category || '미분류'}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '4px' }}>담당 부서</div>
-                  <div style={{ fontSize: '14px' }}>{selected.ai_department || '-'}</div>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', color: '#778090', marginBottom: '8px' }}>민원 제목</div>
-                <div style={{ fontSize: '15px', fontWeight: 700 }}>{selected.title}</div>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', color: '#778090', marginBottom: '8px' }}>민원 내용</div>
-                <div style={{ fontSize: '14px', lineHeight: 1.7, padding: '16px', background: '#f7f8fa', borderRadius: '8px' }}>{selected.content}</div>
-              </div>
-
-              {selected.ai_reason && (
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '8px' }}>AI 분류 이유</div>
-                  <div style={{ fontSize: '14px', lineHeight: 1.7, padding: '16px', background: '#f0f5ff', borderRadius: '8px', color: '#1555a4' }}>{selected.ai_reason}</div>
-                </div>
-              )}
-
-              <button
-                onClick={() => setSelected(null)}
-                style={{ background: '#1555a4', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
-              >
-                목록으로
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h1 className="pg-title">민원결과조회</h1>
-            <p className="pg-desc">신청하신 민원의 처리 진행상황을 확인할 수 있습니다.</p>
-            <div className="result-table-wrap" style={{ marginTop: 28 }}>
-              {loading ? (
-                <p style={{ textAlign: 'center', padding: '40px' }}>로딩중...</p>
-              ) : complaints.length === 0 ? (
-                <p style={{ textAlign: 'center', padding: '40px', color: '#778090' }}>접수된 민원이 없습니다.</p>
-              ) : (
-                <table className="result-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 60 }}>번호</th>
-                      <th>민원제목</th>
-                      <th style={{ width: 110 }}>신청일</th>
-                      <th style={{ width: 100 }}>처리상태</th>
+        <div className="result-table-wrap" style={{ marginTop: 28 }}>
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: '40px' }}>로딩중...</p>
+          ) : complaints.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '40px', color: '#778090' }}>접수된 민원이 없습니다.</p>
+          ) : (
+            <table className="result-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 60 }}>번호</th>
+                  <th>민원제목</th>
+                  <th style={{ width: 110 }}>신청일</th>
+                  <th style={{ width: 100 }}>처리상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {complaints.map((row) => {
+                  const { label, cls } = getStatusLabel(row.status);
+                  return (
+                    <tr key={row.id}>
+                      <td className="num">{row.id}</td>
+                      <td>{row.title}</td>
+                      <td>{row.created_at?.split('T')[0]}</td>
+                      <td><span className={`status-badge ${cls}`}>{label}</span></td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {complaints.map((row) => {
-                      const { label, cls } = getStatusLabel(row.status);
-                      return (
-                        <tr key={row.id} onClick={() => setSelected(row)} style={{ cursor: 'pointer' }}>
-                          <td className="num">{row.id}</td>
-                          <td>{row.title}</td>
-                          <td>{row.created_at?.split('T')[0]}</td>
-                          <td><span className={`status-badge ${cls}`}>{label}</span></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </>
-        )}
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );
