@@ -1,40 +1,54 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import LoginModal from '../components/LoginModal';
 
 export default function Home() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'staff') navigate('/staff');
+    else if (user?.role === 'manager') navigate('/manager');
+  }, [user]);
+
+  useEffect(() => {
+    if (location.state?.openLogin) {
+      setShowLogin(true);
+    }
+  }, [location]);
 
   return (
     <main>
-      {/* Hero */}
-      <section className="hero">
-        <div className="wrap hero-inner">
-          <div className="hero-copy">
-            <h1>일상의 불편,<br />CivicFlow로 전달하세요.</h1>
-            <p>시민의 의견을 AI로 분석하고 담당 부서의 처리를 지원합니다.</p>
-            <div className="search-bar">
-              <span>찾으시는 민원 서비스를 입력해 주세요.</span>
-            </div>
-          </div>
-          <div className="quick">
-            <div onClick={() => navigate('/apply')}>
-              <div className="quick-text">
-                <strong>빠른 민원신청</strong>
-                <small>간편하게 민원을 신청하세요.</small>
-              </div>
-              <span className="quick-arrow">›</span>
-            </div>
-            <div onClick={() => navigate('/report')}>
-              <div className="quick-text">
-                <strong>생활불편 신고</strong>
-                <small>도로·시설 등 불편사항을 신고하세요.</small>
-              </div>
-              <span className="quick-arrow">›</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
 
-      {/* 생활민원 분야 */}
+      <section className="hero">
+          <div className="wrap hero-inner">
+            <div className="hero-copy">
+              <h1>일상의 불편,<br />CivicFlow로 전달하세요.</h1>
+              <p>시민의 의견을 AI로 분석하고 담당 부서의 처리를 지원합니다.</p>
+            </div>
+            <div className="quick">
+              <div onClick={() => navigate('/apply')}>
+                <div className="quick-text">
+                  <strong>빠른 민원신청</strong>
+                  <small>간편하게 민원을 신청하세요.</small>
+                </div>
+                <span className="quick-arrow">›</span>
+              </div>
+              <div onClick={() => navigate('/report')}>
+                <div className="quick-text">
+                  <strong>생활불편 신고</strong>
+                  <small>도로·시설 등 불편사항을 신고하세요.</small>
+                </div>
+                <span className="quick-arrow">›</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
       <section className="section">
         <div className="wrap">
           <div className="categories">
@@ -47,7 +61,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* 패널 */}
           <div className="panels">
             <div className="panel">
               <h3>공지사항</h3>
@@ -72,7 +85,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 더 편리해진 민원 서비스 */}
       <section className="section muted">
         <div className="wrap">
           <div className="title-row">
@@ -90,7 +102,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 처리 절차 */}
       <section className="section">
         <div className="wrap">
           <div className="title-row">
@@ -115,7 +126,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ */}
       <section className="section">
         <div className="wrap faq-wrap">
           <div className="section-heading">
@@ -133,7 +143,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 하단 배너 */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="wrap">
           <div className="bottom-banner">
@@ -146,5 +155,5 @@ export default function Home() {
         </div>
       </section>
     </main>
-  )
+  );
 }

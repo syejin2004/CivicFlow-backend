@@ -69,7 +69,15 @@ function RegisterSteps({ onLoginClick }) {
             <label className="terms-item"><input type="checkbox" className="term-chk" /> 마케팅 정보 수신 동의<span className="opt">(선택)</span></label>
           </div>
           <div className="reg-nav">
-            <button className="btn-next" onClick={() => setStep(2)}>다음 단계</button>
+              <button className="btn-next" onClick={() => {
+                  const required = document.querySelectorAll('.term-chk');
+                  const checked = Array.from(required).slice(0, 3).every(c => c.checked);
+                  if (!checked) {
+                    alert('필수 약관에 동의해주세요.');
+                    return;
+                  }
+                  setStep(2);
+                }}>다음 단계</button>
           </div>
         </div>
       )}
@@ -163,15 +171,16 @@ export default function LoginModal({ initialTab, onClose }) {
       <div className="modal">
         <button className="modal-close" onClick={onClose}>✕</button>
 
-        <div className="modal-type-tabs">
-          <button className={`modal-type-tab${loginType === 'citizen' ? ' active' : ''}`} onClick={() => setLoginType('citizen')}>시민 로그인</button>
-          <button className={`modal-type-tab${loginType === 'staff' ? ' active' : ''}`} onClick={() => setLoginType('staff')}>직원 로그인</button>
-        </div>
+        {tab === 'login' && (
+          <div className="modal-type-tabs">
+            <button className={`modal-type-tab${loginType === 'citizen' ? ' active' : ''}`} onClick={() => setLoginType('citizen')}>시민 로그인</button>
+            <button className={`modal-type-tab${loginType === 'staff' ? ' active' : ''}`} onClick={() => setLoginType('staff')}>직원 로그인</button>
+          </div>
+        )}
 
         {tab === 'register' && (
-          <div className="modal-tabs" style={{ display: 'flex' }}>
-            <button className="modal-tab" onClick={() => setTab('login')}>로그인</button>
-            <button className="modal-tab active">회원가입</button>
+          <div style={{ padding: '20px 24px 0', fontSize: '18px', fontWeight: 800, color: '#172238' }}>
+            회원가입
           </div>
         )}
 
@@ -198,15 +207,6 @@ export default function LoginModal({ initialTab, onClose }) {
                 <label className="mf-check"><input type="checkbox" /> 로그인 상태 유지</label>
               </div>
               <button className="mf-submit" onClick={handleLogin}>로그인</button>
-              {loginType === 'citizen' && (
-                <>
-                  <div className="mf-simple-divider">간편 로그인</div>
-                  <div className="mf-social">
-                    <button className="mf-social-btn kakao">카카오로 로그인</button>
-                    <button className="mf-social-btn naver">네이버로 로그인</button>
-                  </div>
-                </>
-              )}
               <div className="mf-bottom">
                 <span>아직 계정이 없으신가요?</span>
                 <a onClick={() => setTab('register')}>회원가입</a>

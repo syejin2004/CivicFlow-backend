@@ -84,7 +84,7 @@ export default function Class() {
               <th style={{ width: 80 }}>번호</th>
               <th>민원 제목</th>
               <th style={{ width: 110 }}>AI 분류</th>
-              <th style={{ width: 110 }}>AI 추천 부서</th>
+              <th style={{ width: 110 }}>담당 부서</th>
               <th style={{ width: 90 }}>접수일</th>
               <th style={{ width: 80 }}>상태</th>
             </tr>

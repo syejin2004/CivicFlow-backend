@@ -1,16 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config/api';
 
 const ComplaintContext = createContext(null);
 
-const BASE_URL = API_BASE_URL;
+const BASE_URL = 'https://civicflow-production.up.railway.app/api';
 
 const getToken = () => localStorage.getItem('civicflow_token');
 
 export function ComplaintProvider({ children }) {
   const [complaints, setComplaints] = useState([]);
   const [staff] = useState([]);
-  const [departments, setDepartments] = useState([]);
 
   useEffect(() => {
     fetchComplaints();
@@ -80,43 +78,6 @@ export function ComplaintProvider({ children }) {
     }
   };
 
-  // 담당 부서 확정용 부서 목록 조회 (담당자/관리자 전용)
-  const fetchDepartments = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/departments`, {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-      });
-      const body = await res.json().catch(() => ({}));
-      if (res.ok && Array.isArray(body.data)) {
-        setDepartments(body.data);
-        return body.data;
-      }
-    } catch (e) {
-      console.error('부서 목록 조회 실패:', e);
-    }
-    return [];
-  };
-
-  // 최종 담당 부서 확정 (기존 PATCH /:id/confirm API 사용)
-  const confirmDepartment = async (complaintId, departmentId) => {
-    try {
-      const res = await fetch(`${BASE_URL}/complaints/${complaintId}/confirm`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getToken()}`
-        },
-        body: JSON.stringify({ department_id: departmentId })
-      });
-      const body = await res.json().catch(() => ({}));
-      if (res.ok) await fetchComplaints();
-      return { success: res.ok, message: body.message || (res.ok ? '담당 부서가 확정되었습니다.' : '담당 부서 확정에 실패했습니다.'), data: body.data };
-    } catch (e) {
-      console.error('담당 부서 확정 실패:', e);
-      return { success: false, message: '서버에 연결할 수 없습니다.' };
-    }
-  };
-
   const completeComplaint = async (complaintId, answer) => {
     await updateComplaintAnswer(complaintId, answer);
     await updateComplaintStatus(complaintId, 'COMPLETED');
@@ -142,9 +103,6 @@ export function ComplaintProvider({ children }) {
     assignComplaint,
     assignMultipleComplaints,
     addComplaint,
-    departments,
-    fetchDepartments,
-    confirmDepartment,
   };
 
   return <ComplaintContext.Provider value={value}>{children}</ComplaintContext.Provider>;

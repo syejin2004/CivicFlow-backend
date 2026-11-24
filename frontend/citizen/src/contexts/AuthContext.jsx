@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { API_BASE_URL } from '../config/api';
 
 const AuthContext = createContext(null);
 
-const BASE_URL = API_BASE_URL;
+const BASE_URL = 'https://civicflow-production.up.railway.app/api';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

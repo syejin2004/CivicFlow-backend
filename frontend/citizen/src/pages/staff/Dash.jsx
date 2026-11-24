@@ -107,10 +107,14 @@ export default function Dash({ setPage }) {
             <div className="s-card" style={{ padding: '16px 18px' }}>
               <div className="s-card-title" style={{ marginBottom: '10px' }}>빠른 업무</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', border: '1px solid #e2e6ec', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+                <div
+                  onClick={() => setPage('assign')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', border: '1px solid #e2e6ec', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#374151' }}>
                   <span>민원 배정하기</span><span style={{ color: '#9ca3af' }}>›</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', border: '1px solid #e2e6ec', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+                <div
+                  onClick={() => setPage('team')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', border: '1px solid #e2e6ec', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#374151' }}>
                   <span>담당자 업무 현황 보기</span><span style={{ color: '#9ca3af' }}>›</span>
                 </div>
               </div>
@@ -121,7 +125,7 @@ export default function Dash({ setPage }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
         <div className="s-card">
-          <div className="s-card-title">최근 민원 현황 <a>전체보기 ›</a></div>
+          <div className="s-card-title">최근 민원 현황 <a onClick={() => setPage('all-list')} style={{ cursor: 'pointer' }}>전체보기 ›</a></div>
           <table className="s-mini-tbl">
             <thead>
               <tr>
@@ -142,7 +146,7 @@ export default function Dash({ setPage }) {
                 recentComplaints.map((c) => {
                   const { label, cls } = getStatusInfo(c.status);
                   return (
-                    <tr key={c.id} style={{ cursor: 'pointer' }}>
+                    <tr key={c.id} onClick={() => setPage('list')} style={{ cursor: 'pointer' }}>
                       <td className="tnum">{c.id}</td>
                       <td>{c.title?.length > 20 ? c.title.substring(0, 20) + '...' : c.title}</td>
                       <td><span style={{ fontSize: '11px', color: '#1555a4', fontWeight: 700 }}>{c.ai_category || '미분류'}</span></td>

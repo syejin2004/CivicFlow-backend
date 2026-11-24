@@ -2,32 +2,10 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useComplaints } from '../contexts/ComplaintContext';
-import { AI_API_BASE_URL as AI_API_URL } from '../config/api';
-
-// 백엔드 민원 분류 체계 (backend/constants/complaintCategories.js 와 동일)
-// 분야 번호(category_id)는 백엔드가 DB categories 테이블에서 이름으로 조회하므로 여기서는 이름만 사용
-const CATEGORY_OPTIONS = [
-  { category: '도로파손', department: '도로관리과' },
-  { category: '불법주정차', department: '교통지도과' },
-  { category: '쓰레기투기', department: '환경미화과' },
-  { category: '소음', department: '생활민원과' },
-  { category: '가로등고장', department: '시설관리과' },
-  { category: '기타', department: '민원실' },
-];
-
-const inputStyle = {
-  width: '100%',
-  padding: '10px 14px',
-  border: '1px solid #d1d5db',
-  borderRadius: '6px',
-  fontSize: '14px',
-  fontFamily: 'inherit',
-  outline: 'none'
-};
 
 export default function AIPhoto() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { addComplaint } = useComplaints();
   const fileInputRef = useRef(null);
 
@@ -35,28 +13,15 @@ export default function AIPhoto() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState(null);
-  const [analyzeError, setAnalyzeError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedId, setSubmittedId] = useState(null);
 
   // 수정 가능한 필드
   const [category, setCategory] = useState('');
-  const [department, setDepartment] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [location, setLocation] = useState('');
 
-  // 입력값 및 분석 결과 초기화
-  const resetForm = () => {
-    setAiResult(null);
-    setAnalyzeError('');
-    setCategory('');
-    setDepartment('');
-    setTitle('');
-    setContent('');
-    setLocation('');
-  };
+  const categories = ['도로/교통', '시설물', '환경/청소', '안전/재난', '주거/도시', '복지/건강', '기타'];
 
   // 파일 검증
   const validateFile = (file) => {
@@ -84,7 +49,11 @@ export default function AIPhoto() {
     reader.onload = (e) => {
       setUploadedImage(e.target.result);
       setUploadedFile(file);
-      resetForm();
+      setAiResult(null);
+      setCategory('');
+      setTitle('');
+      setContent('');
+      setLocation('');
     };
     reader.readAsDataURL(file);
   };
@@ -112,66 +81,63 @@ export default function AIPhoto() {
     if (file) handleFileSelect(file);
   };
 
-  // Gemini AI 이미지 분석 요청 (백엔드 경유, API 키는 서버에서만 사용)
-  const handleAnalyze = async () => {
+  // AI 분석 시작
+  const handleAnalyze = () => {
     if (!uploadedImage) {
       alert('사진을 먼저 업로드해주세요.');
       return;
     }
 
     setIsAnalyzing(true);
-    setAnalyzeError('');
 
-    try {
-      const res = await fetch(`${AI_API_URL}/ai/analyze-image`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: uploadedImage, mimeType: uploadedFile?.type })
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body.data) {
-        throw new Error(body.message || 'AI 분석에 실패했습니다.');
-      }
+    // Mock AI 분석 (2초 후 결과 표시)
+    setTimeout(() => {
+      const mockResult = {
+        detectedObject: '도로 파손',
+        category: '도로/교통',
+        title: '도로 포트홀 보수 요청',
+        content: '해당 도로에 포트홀이 발생하여 차량 및 보행자의 안전사고가 우려됩니다. 현장 확인 후 보수 조치를 요청드립니다.',
+        confidence: 0.92,
+        isMock: true
+      };
 
-      const result = body.data;
-      setAiResult(result);
-      setCategory(result.category || '');
-      setDepartment(result.department || '');
-      setTitle(result.title || '');
-      setContent(result.content || '');
-      setLocation(result.locationHint || '');
-    } catch (err) {
-      setAnalyzeError(
-        err instanceof TypeError
-          ? 'AI 분석 서버에 연결할 수 없습니다. 네트워크 상태를 확인한 후 다시 시도해 주세요.'
-          : err.message
-      );
-    } finally {
+      setAiResult(mockResult);
+      setCategory(mockResult.category);
+      setTitle(mockResult.title);
+      setContent(mockResult.content);
       setIsAnalyzing(false);
-    }
+    }, 2000);
   };
 
   // 이미지 삭제
   const handleRemoveImage = () => {
     setUploadedImage(null);
     setUploadedFile(null);
-    resetForm();
+    setAiResult(null);
+    setCategory('');
+    setTitle('');
+    setContent('');
+    setLocation('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  // 처음부터 다시 작성
-  const handleRestart = () => {
-    handleRemoveImage();
-    setSubmittedId(null);
-  };
-
-  // 민원 접수 (기존 민원 접수 API 재사용)
-  const handleSubmit = async () => {
-    // 로그인 체크 (헤더의 로그인 모달 사용 → 작성 내용 유지)
+  // 민원 접수
+  const handleSubmit = () => {
+    // 로그인 체크
     if (!isAuthenticated) {
-      alert('민원 접수는 로그인 후 가능합니다.\n화면 상단의 [로그인]을 눌러 로그인한 뒤 다시 접수해 주세요.\n(작성한 내용은 그대로 유지됩니다.)');
+      if (window.confirm('로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?')) {
+        // 현재 작성 내용을 localStorage에 임시 저장
+        localStorage.setItem('civicflow_draft', JSON.stringify({
+          category,
+          title,
+          content,
+          location,
+          image: uploadedImage
+        }));
+        navigate('/', { state: { returnTo: '/ai-photo' } });
+      }
       return;
     }
 
@@ -194,66 +160,55 @@ export default function AIPhoto() {
     }
 
     // 최종 확인
-    if (!window.confirm(`아래 내용으로 민원을 접수하시겠습니까?\n\n분야: ${category}\n제목: ${title}\n위치: ${location}`)) {
+    if (!window.confirm('민원을 접수하시겠습니까?')) {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const data = await addComplaint({
-        title: title.trim(),
-        content: content.trim(),
-        location: location.trim(),
-        category_name: category,
-        // AI 원본 추천값 (최종 담당 부서는 민원 담당자가 확정)
-        ai_category: aiResult?.category || null,
-        ai_department: aiResult?.department || null,
-        ai_reason: aiResult?.detectedIssue ? `사진 AI 분석: ${aiResult.detectedIssue}` : null
-      });
-      if (!data?.id) {
-        throw new Error(data?.message || '민원 접수에 실패했습니다.');
-      }
-      setSubmittedId(data.id);
-      window.scrollTo(0, 0);
-    } catch (err) {
-      alert(`${err.message}\n잠시 후 다시 시도해 주세요.`);
-    } finally {
-      setIsSubmitting(false);
+    // 민원 접수 (Mock)
+    const newComplaint = {
+      id: Date.now(),
+      title,
+      content,
+      category,
+      location,
+      image: uploadedImage,
+      status: 'new',
+      statusLabel: '접수완료',
+      createdAt: new Date().toISOString().split('T')[0],
+      citizenId: user?.id,
+      citizenName: user?.name,
+      aiGenerated: aiResult ? true : false,
+      aiConfidence: aiResult?.confidence || null
+    };
+
+    // ComplaintContext에 추가 (실제로는 백엔드 API 호출)
+    if (addComplaint) {
+      addComplaint(newComplaint);
     }
+
+    // 임시 저장 삭제
+    localStorage.removeItem('civicflow_draft');
+
+    alert('민원이 접수되었습니다.\n접수번호: ' + newComplaint.id);
+    navigate('/result');
   };
 
-  // 접수 완료 화면
-  if (submittedId) {
-    return (
-      <div className="inner-page">
-        <div className="wrap">
-          <div className="breadcrumb">
-            <span onClick={() => navigate('/')}>홈</span>
-            <span className="sep">›</span>
-            <span>AI 민원 자동 작성</span>
-          </div>
-          <div style={{ background: '#fff', border: '1px solid #e2e6ec', borderRadius: '10px', padding: '56px 28px', textAlign: 'center', marginTop: '28px' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#1555a4', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 800, margin: '0 auto 20px' }}>✓</div>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#172238', marginBottom: '10px' }}>민원이 정상적으로 접수되었습니다</div>
-            <div style={{ fontSize: '14px', color: '#778090', lineHeight: 1.8, marginBottom: '24px' }}>
-              접수번호 <strong style={{ color: '#1555a4' }}>{submittedId}</strong><br />
-              담당 부서 검토 후 처리 결과를 안내해 드립니다.
-            </div>
-            <div style={{ display: 'inline-block', textAlign: 'left', background: '#f7f9fc', borderRadius: '8px', padding: '16px 22px', fontSize: '13px', color: '#374151', lineHeight: 1.9, marginBottom: '28px' }}>
-              <div><strong>민원 분야</strong> · {category}</div>
-              <div><strong>AI 추천 담당 부서</strong> · {department || '-'}</div>
-              <div><strong>민원 제목</strong> · {title}</div>
-              <div><strong>발생 위치</strong> · {location}</div>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={() => navigate('/result')} style={{ background: '#1555a4', color: '#fff', border: 'none', padding: '13px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>내 민원 처리현황 보기</button>
-              <button onClick={handleRestart} style={{ background: '#fff', color: '#374151', border: '1px solid #d1d5db', padding: '13px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>새 민원 작성</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 임시 저장된 내용 복원
+  useState(() => {
+    const draft = localStorage.getItem('civicflow_draft');
+    if (draft) {
+      try {
+        const data = JSON.parse(draft);
+        setCategory(data.category || '');
+        setTitle(data.title || '');
+        setContent(data.content || '');
+        setLocation(data.location || '');
+        setUploadedImage(data.image || null);
+      } catch (e) {
+        console.error('Failed to restore draft', e);
+      }
+    }
+  }, []);
 
   return (
     <div className="inner-page">
@@ -282,8 +237,8 @@ export default function AIPhoto() {
           </div>
           <div style={{ flex: 1, height: '2px', background: '#e2e6ec', margin: '0 8px' }}></div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: aiResult ? '#1555a4' : '#e2e6ec', color: aiResult ? '#fff' : '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 800 }}>3</div>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: aiResult ? '#1555a4' : '#9ca3af' }}>내용 확인 및 접수</span>
+            <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#e2e6ec', color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 800 }}>3</div>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#9ca3af' }}>내용 확인 및 접수</span>
           </div>
         </div>
 
@@ -405,23 +360,16 @@ export default function AIPhoto() {
                     AI가 분석하는 중...
                   </>
                 ) : (
-                  <>🤖 {analyzeError ? 'AI 분석 다시 시도' : 'AI 분석 시작'}</>
+                  <>🤖 AI 분석 시작</>
                 )}
               </button>
-            )}
-
-            {/* 분석 실패 안내 */}
-            {analyzeError && !isAnalyzing && (
-              <div style={{ marginTop: '12px', background: '#fdecec', borderRadius: '7px', padding: '12px 14px', fontSize: '12px', color: '#b42318', lineHeight: 1.6 }}>
-                ⚠️ {analyzeError}
-              </div>
             )}
           </div>
 
           {/* 오른쪽: AI 분석 결과 및 민원 작성 */}
           <div style={{ background: '#fff', border: '1px solid #e2e6ec', borderRadius: '10px', padding: '24px' }}>
             <div style={{ fontSize: '16px', fontWeight: 800, color: '#172238', marginBottom: '8px' }}>
-              2. AI 분석 결과
+              2. AI 분석 결과 {aiResult?.isMock && <span style={{ fontSize: '11px', fontWeight: 600, color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '10px', marginLeft: '6px' }}>시연용 예시</span>}
             </div>
             <p style={{ fontSize: '13px', color: '#778090', margin: '0 0 16px' }}>
               AI가 분석한 결과를 확인하고 수정할 수 있습니다.
@@ -433,62 +381,42 @@ export default function AIPhoto() {
               </div>
             )}
 
-            {isAnalyzing && (
-              <div style={{ padding: '48px 20px', textAlign: 'center', color: '#778090', fontSize: '13px' }}>
-                <span style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid #1555a4', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite', marginBottom: '12px' }}></span>
-                <div>AI가 사진 속 문제 상황을 분석하고 있습니다...</div>
-              </div>
-            )}
-
             {aiResult && (
               <div>
                 {/* AI 감지 결과 */}
                 <div style={{ background: '#f0f5ff', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
                   <div style={{ fontSize: '12px', color: '#1555a4', fontWeight: 700, marginBottom: '4px' }}>AI 감지 결과</div>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#172238' }}>{aiResult.detectedIssue}</div>
-                  {typeof aiResult.confidence === 'number' && (
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#172238' }}>{aiResult.detectedObject}</div>
+                  {aiResult.confidence && (
                     <div style={{ fontSize: '12px', color: '#778090', marginTop: '4px' }}>
                       분석 신뢰도: {(aiResult.confidence * 100).toFixed(0)}%
                     </div>
                   )}
                 </div>
 
-                {/* 분석이 어렵거나 추가 정보가 필요한 경우 */}
-                {(!aiResult.analyzable || aiResult.needMoreInfo) && (
-                  <div style={{ background: '#fef3c7', borderRadius: '7px', padding: '12px 14px', fontSize: '12px', color: '#92400e', marginBottom: '16px', lineHeight: 1.6 }}>
-                    ℹ️ {aiResult.needMoreInfo || '사진만으로 문제 상황을 정확히 판단하기 어렵습니다. 아래 내용을 직접 보완해 주세요.'}
-                  </div>
-                )}
-
-                {/* 민원 분야 */}
+                {/* 민원 유형 */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginBottom: '8px', color: '#374151' }}>
-                    민원 분야 <span style={{ color: '#e23b45' }}>*</span>
+                    민원 유형 <span style={{ color: '#e23b45' }}>*</span>
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    style={inputStyle}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      outline: 'none'
+                    }}
                   >
                     <option value="">선택하세요</option>
-                    {CATEGORY_OPTIONS.map(c => (
-                      <option key={c.category} value={c.category}>{c.category}</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
-                </div>
-
-                {/* 추천 담당 부서 */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginBottom: '8px', color: '#374151' }}>
-                    AI 추천 담당 부서
-                  </label>
-                  <input
-                    type="text"
-                    value={department || '-'}
-                    readOnly
-                    style={{ ...inputStyle, background: '#f7f9fc', color: '#374151' }}
-                  />
-                  <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '6px' }}>AI 추천 부서는 접수 시 함께 전달되며, 최종 담당 부서는 민원 담당자가 검토 후 확정합니다.</div>
                 </div>
 
                 {/* 민원 제목 */}
@@ -523,11 +451,16 @@ export default function AIPhoto() {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="예: 인천시 연수구 송도동 123-45"
-                    style={inputStyle}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      outline: 'none'
+                    }}
                   />
-                  {!aiResult.locationHint && (
-                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '6px' }}>사진만으로 위치를 확인할 수 없어 직접 입력이 필요합니다.</div>
-                  )}
                 </div>
 
                 {/* 민원 내용 */}
@@ -562,38 +495,19 @@ export default function AIPhoto() {
                 {/* 접수 버튼 */}
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
                   style={{
                     width: '100%',
                     padding: '14px',
                     border: 'none',
                     borderRadius: '8px',
-                    background: isSubmitting ? '#9ca3af' : '#172e5c',
+                    background: '#172e5c',
                     color: '#fff',
                     fontSize: '14px',
                     fontWeight: 800,
-                    cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                    cursor: 'pointer'
                   }}
                 >
-                  {isSubmitting ? '접수 중...' : '민원 접수하기'}
-                </button>
-                <button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing || isSubmitting}
-                  style={{
-                    width: '100%',
-                    marginTop: '8px',
-                    padding: '10px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    background: '#fff',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    color: '#374151'
-                  }}
-                >
-                  AI 다시 분석하기
+                  민원 접수하기
                 </button>
               </div>
             )}
