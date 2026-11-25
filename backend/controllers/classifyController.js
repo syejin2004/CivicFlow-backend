@@ -22,17 +22,22 @@ const keywordClassify = (content) => {
   return { category: '기타', department: '민원실', code: 6 };
 };
 
-// AI 기반 분류 (Strategy 패턴 - Gemini)
+// AI 기반 분류 (Strategy 패턴 - Groq)
 const aiClassify = async (content) => {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${process.env.GEMINI_KEY}`,
+    'https://api.groq.com/openai/v1/chat/completions',
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `다음 민원을 분류해주세요.
+        model: 'llama3-8b-8192',
+        messages: [
+          {
+            role: 'user',
+            content: `다음 민원을 분류해주세요.
 민원내용: ${content}
 
 분류항목: 도로파손, 불법주정차, 쓰레기투기, 소음, 가로등고장, 기타
@@ -40,20 +45,21 @@ const aiClassify = async (content) => {
 
 반드시 JSON 형식으로만 답하세요:
 {"category":"분류결과","department":"담당부서","reason":"분류이유"}`
-          }]
-        }]
+          }
+        ],
+        temperature: 0.1
       })
     }
   );
 
   const data = await response.json();
-  console.log('Gemini 응답:', JSON.stringify(data));
+  console.log('Groq 응답:', JSON.stringify(data));
 
-  if (!data.candidates || data.candidates.length === 0) {
-    throw new Error('Gemini 응답 없음');
+  if (!data.choices || data.choices.length === 0) {
+    throw new Error('Groq 응답 없음');
   }
 
-  const text = data.candidates[0].content.parts[0].text;
+  const text = data.choices[0].message.content;
   const clean = text.replace(/```json|```/g, '').trim();
   return JSON.parse(clean);
 };
@@ -63,7 +69,6 @@ const classifyComplaint = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // 민원 내용 가져오기
     const [rows] = await db.query(
       'SELECT * FROM complaints WHERE id = ?', [id]
     );
@@ -75,7 +80,6 @@ const classifyComplaint = async (req, res) => {
     const complaint = rows[0];
     let result;
 
-    // Strategy 패턴: AI 먼저 시도, 실패시 키워드로 전환
     try {
       result = await aiClassify(complaint.content);
     } catch (err) {
@@ -83,7 +87,6 @@ const classifyComplaint = async (req, res) => {
       result = keywordClassify(complaint.content);
     }
 
-    // DB에 AI 추천 결과 저장
     await db.query(
       `UPDATE complaints 
        SET ai_category = ?, ai_department = ?, ai_reason = ?
@@ -105,7 +108,6 @@ const classifyComplaint = async (req, res) => {
   }
 };
 
-// 담당자가 최종 담당 부서(및 분야) 확정 - AI 추천(ai_department)은 그대로 두고 department_id 에 확정값 저장
 const confirmClassify = async (req, res) => {
   const { id } = req.params;
   const { category_id, department_id } = req.body;
@@ -135,17 +137,14 @@ const confirmClassify = async (req, res) => {
       return res.status(404).json({ message: '민원 없음', data: null });
     }
 
-    // UPDATE 전에 이전 값을 복사해 두어 처리 이력이 항상 변경 전 상태로 기록되도록 함
     const complaint = { ...rows[0] };
     if (['COMPLETED', 'REJECTED'].includes(complaint.status)) {
       await conn.rollback();
       return res.status(400).json({ message: '처리가 끝난 민원은 담당 부서를 변경할 수 없습니다.', data: null });
     }
 
-    // 접수 상태면 배정완료로 전환, 이미 진행 중이면 상태 유지
     const nextStatus = complaint.status === 'SUBMITTED' ? 'ASSIGNED' : complaint.status;
 
-    // category_id 를 보내지 않으면 기존 분야 유지
     await conn.query(
       `UPDATE complaints
        SET department_id = ?, category_id = COALESCE(?, category_id), status = ?
