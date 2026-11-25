@@ -80,7 +80,8 @@ export function AuthProvider({ children }) {
           username: userData.name,
           email: userData.email,
           password: userData.password,
-          role: userData.role.toUpperCase()
+          role: userData.role.toUpperCase(),
+          department_id: userData.department_id || null  // 추가!
         })
       });
       const data = await res.json();
