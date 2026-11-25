@@ -78,10 +78,28 @@ export default function Detail({ setPage, showToast, complaintId }) {
               </div>
             ))}
           </div>
+
           <div className="s-detail-card">
             <h3>민원 내용</h3>
             <p className="s-detail-content">{complaint.content}</p>
           </div>
+
+          {complaint.images && (
+            <div className="s-detail-card">
+              <h3>첨부 이미지</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '8px' }}>
+                {complaint.images.split(',').map((url, i) => (
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`첨부이미지 ${i + 1}`}
+                    style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: '1px solid #e2e6ec' }}
+                    onClick={() => window.open(url, '_blank')}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="s-detail-right">

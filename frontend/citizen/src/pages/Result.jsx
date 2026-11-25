@@ -105,6 +105,37 @@ export default function Result() {
                 <div style={{ fontSize: '14px', lineHeight: 1.7, padding: '16px', background: '#f7f8fa', borderRadius: '8px' }}>{selected.content}</div>
               </div>
 
+              {selected.images && (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '8px' }}>첨부 이미지</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    {selected.images.split(',').map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`첨부이미지 ${i + 1}`}
+                        style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: '1px solid #e2e6ec' }}
+                        onClick={() => window.open(url, '_blank')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selected.answer_content && (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '12px', color: '#778090', marginBottom: '8px' }}>담당자 답변</div>
+                  <div style={{ fontSize: '14px', lineHeight: 1.7, padding: '16px', background: '#e6f4ea', borderRadius: '8px', color: '#1a7a3c', borderLeft: '4px solid #22c55e' }}>
+                    {selected.answer_content}
+                  </div>
+                  {selected.answer_created_at && (
+                    <div style={{ fontSize: '11px', color: '#778090', marginTop: '6px' }}>
+                      답변일: {selected.answer_created_at?.split('T')[0]}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {selected.ai_reason && (
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ fontSize: '12px', color: '#778090', marginBottom: '8px' }}>AI 분류 이유</div>
@@ -137,6 +168,7 @@ export default function Result() {
                       <th>민원제목</th>
                       <th style={{ width: 110 }}>신청일</th>
                       <th style={{ width: 100 }}>처리상태</th>
+                      <th style={{ width: 80 }}>답변</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -148,6 +180,13 @@ export default function Result() {
                           <td>{row.title}</td>
                           <td>{row.created_at?.split('T')[0]}</td>
                           <td><span className={`status-badge ${cls}`}>{label}</span></td>
+                          <td style={{ textAlign: 'center' }}>
+                            {row.answer_content ? (
+                              <span style={{ fontSize: '11px', background: '#e6f4ea', color: '#22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>답변완료</span>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#9ca3af' }}>-</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
