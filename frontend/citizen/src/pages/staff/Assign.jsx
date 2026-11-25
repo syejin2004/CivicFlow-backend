@@ -30,6 +30,14 @@ export default function Assign() {
 
   const unassignedComplaints = complaints.filter(c => c.status === 'SUBMITTED');
 
+  // 부서별 담당자 그룹화
+  const staffByDept = staff.reduce((acc, s) => {
+    const dept = s.dept_name || '미배정';
+    if (!acc[dept]) acc[dept] = [];
+    acc[dept].push(s);
+    return acc;
+  }, {});
+
   const handleAssign = async () => {
     if (!selectedComplaint || !selectedStaff) {
       alert('민원과 담당자를 선택해주세요.');
@@ -120,6 +128,9 @@ export default function Assign() {
                   <div><strong>번호:</strong> {selectedComplaint.id}</div>
                   <div><strong>제목:</strong> {selectedComplaint.title}</div>
                   <div><strong>AI 분류:</strong> {selectedComplaint.ai_category || '미분류'}</div>
+                  {selectedComplaint.ai_department && (
+                    <div><strong>추천 부서:</strong> <span style={{ color: '#1555a4', fontWeight: 600 }}>{selectedComplaint.ai_department}</span></div>
+                  )}
                 </div>
               </div>
 
@@ -133,26 +144,38 @@ export default function Assign() {
                   style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit' }}
                 >
                   <option value="">담당자를 선택하세요</option>
-                  {staff.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.username} ({s.email})
-                    </option>
+                  {Object.entries(staffByDept).map(([dept, members]) => (
+                    <optgroup key={dept} label={`📁 ${dept} (${members.length}명)`}>
+                      {members.map(s => {
+                        const assignedCount = complaints.filter(c => c.assigned_to === s.id).length;
+                        return (
+                          <option key={s.id} value={s.id}>
+                            {s.username} - 현재 {assignedCount}건
+                          </option>
+                        );
+                      })}
+                    </optgroup>
                   ))}
                 </select>
               </div>
 
               <div style={{ background: '#e9f1fc', borderRadius: '8px', padding: '12px', marginBottom: '20px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, marginBottom: '8px', color: '#1555a4' }}>
-                  담당자별 업무량
+                  부서별 업무량
                 </div>
-                {staff.map(s => {
-                  const assignedCount = complaints.filter(c => c.assigned_to === s.id).length;
-                  return (
-                    <div key={s.id} style={{ fontSize: '12px', marginBottom: '4px', color: '#374151' }}>
-                      {s.username}: {assignedCount}건
-                    </div>
-                  );
-                })}
+                {Object.entries(staffByDept).map(([dept, members]) => (
+                  <div key={dept} style={{ marginBottom: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>{dept}</div>
+                    {members.map(s => {
+                      const assignedCount = complaints.filter(c => c.assigned_to === s.id).length;
+                      return (
+                        <div key={s.id} style={{ fontSize: '11px', color: '#778090', marginLeft: '8px', marginBottom: '2px' }}>
+                          {s.username}: {assignedCount}건
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
 
               <button

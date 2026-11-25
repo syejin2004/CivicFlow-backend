@@ -108,6 +108,7 @@ function RegisterSteps({ onLoginClick }) {
             <select name="role" value={form.role} onChange={handleChange}>
               <option value="CITIZEN">시민</option>
               <option value="OFFICER">민원 담당자</option>
+              <option value="ADMIN">부서 관리자</option>
             </select>
           </div>
 

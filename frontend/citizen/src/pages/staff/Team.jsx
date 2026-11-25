@@ -20,8 +20,7 @@ export default function Team() {
       });
       if (res.ok) {
         const data = await res.json();
-        const officers = data.filter(u => u.role === 'OFFICER');
-        setStaff(officers);
+        setStaff(data.filter(u => u.role === 'OFFICER'));
       }
     } catch (e) {
       console.error('담당자 조회 실패:', e);
@@ -40,11 +39,10 @@ export default function Team() {
   };
 
   const staffStats = staff.map(s => {
-    const staffComplaints = complaints.filter(c => c.assigned_to === s.id); 
+    const staffComplaints = complaints.filter(c => c.assigned_to === s.id);
     const completed = staffComplaints.filter(c => c.status === 'COMPLETED').length;
     const inProgress = staffComplaints.filter(c => c.status === 'PROCESSING').length;
     const rate = staffComplaints.length > 0 ? Math.round((completed / staffComplaints.length) * 100) : 0;
-
     return {
       ...s,
       total: staffComplaints.length,
@@ -70,6 +68,7 @@ export default function Team() {
               <thead>
                 <tr>
                   <th style={{ width: 100 }}>이름</th>
+                  <th style={{ width: 120 }}>부서</th>
                   <th style={{ width: 160 }}>이메일</th>
                   <th style={{ width: 80 }}>배정</th>
                   <th style={{ width: 80 }}>처리중</th>
@@ -81,7 +80,7 @@ export default function Team() {
               <tbody>
                 {staff.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
                       담당자가 없습니다.
                     </td>
                   </tr>
@@ -96,6 +95,11 @@ export default function Team() {
                         style={{ cursor: 'pointer', background: selectedStaff?.id === s.id ? '#f0f5ff' : 'transparent' }}
                       >
                         <td style={{ fontWeight: 600 }}>{s.username}</td>
+                        <td>
+                          <span style={{ fontSize: '12px', background: s.dept_name ? '#e9f1fc' : '#f3f4f6', color: s.dept_name ? '#1555a4' : '#9ca3af', padding: '2px 8px', borderRadius: '10px' }}>
+                            {s.dept_name || '미배정'}
+                          </span>
+                        </td>
                         <td>{s.email}</td>
                         <td>{s.total}</td>
                         <td>{s.inProgress}</td>
@@ -127,6 +131,7 @@ export default function Team() {
             <div style={{ background: '#f7f8fa', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>{selectedStaff.username}</div>
               <div style={{ fontSize: '13px', color: '#374151' }}>
+                <div><strong>부서:</strong> {selectedStaff.dept_name || '미배정'}</div>
                 <div><strong>이메일:</strong> {selectedStaff.email}</div>
               </div>
             </div>
