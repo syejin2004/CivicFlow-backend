@@ -40,7 +40,7 @@ export default function Team() {
   };
 
   const staffStats = staff.map(s => {
-    const staffComplaints = complaints.filter(c => c.department_id === s.id);
+    const staffComplaints = complaints.filter(c => c.assigned_to === s.id); 
     const completed = staffComplaints.filter(c => c.status === 'COMPLETED').length;
     const inProgress = staffComplaints.filter(c => c.status === 'PROCESSING').length;
     const rate = staffComplaints.length > 0 ? Math.round((completed / staffComplaints.length) * 100) : 0;

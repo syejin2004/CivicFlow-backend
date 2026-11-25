@@ -5,7 +5,7 @@ const BASE_URL = 'https://civicflow-production.up.railway.app/api';
 const getToken = () => localStorage.getItem('civicflow_token');
 
 export default function Assign() {
-  const { complaints, updateComplaintStatus } = useComplaints();
+  const { complaints, fetchComplaints } = useComplaints();
   const [staff, setStaff] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState('');
@@ -28,20 +28,39 @@ export default function Assign() {
     }
   };
 
-  const unassignedComplaints = complaints.filter(c =>
-    c.status === 'SUBMITTED'
-  );
+  const unassignedComplaints = complaints.filter(c => c.status === 'SUBMITTED');
 
   const handleAssign = async () => {
     if (!selectedComplaint || !selectedStaff) {
       alert('민원과 담당자를 선택해주세요.');
       return;
     }
-    await updateComplaintStatus(selectedComplaint.id, 'ASSIGNED');
-    const staffMember = staff.find(s => s.id === parseInt(selectedStaff));
-    alert(`${staffMember?.username}에게 배정되었습니다.`);
-    setSelectedComplaint(null);
-    setSelectedStaff('');
+    try {
+      const res = await fetch(`${BASE_URL}/complaints/${selectedComplaint.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({
+          next_status: 'ASSIGNED',
+          assigned_to: parseInt(selectedStaff),
+          memo: '담당자 배정'
+        })
+      });
+      if (res.ok) {
+        const staffMember = staff.find(s => s.id === parseInt(selectedStaff));
+        alert(`${staffMember?.username}에게 배정되었습니다.`);
+        await fetchComplaints();
+        setSelectedComplaint(null);
+        setSelectedStaff('');
+      } else {
+        const data = await res.json();
+        alert(data.message || '배정 실패');
+      }
+    } catch (e) {
+      alert('서버 연결 실패');
+    }
   };
 
   return (
@@ -127,7 +146,7 @@ export default function Assign() {
                   담당자별 업무량
                 </div>
                 {staff.map(s => {
-                  const assignedCount = complaints.filter(c => c.status === 'ASSIGNED' || c.status === 'PROCESSING').length;
+                  const assignedCount = complaints.filter(c => c.assigned_to === s.id).length;
                   return (
                     <div key={s.id} style={{ fontSize: '12px', marginBottom: '4px', color: '#374151' }}>
                       {s.username}: {assignedCount}건

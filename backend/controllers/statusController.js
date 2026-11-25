@@ -1,6 +1,5 @@
 const db = require('../config/db');
 
-// State 패턴 - 허용된 상태 전환
 const transitions = {
   'SUBMITTED': ['ASSIGNED'],
   'ASSIGNED': ['PROCESSING'],
@@ -9,13 +8,11 @@ const transitions = {
   'REJECTED': []
 };
 
-// 상태 변경
 const updateStatus = async (req, res) => {
   const { id } = req.params;
-  const { next_status, memo } = req.body;
+  const { next_status, memo, assigned_to } = req.body;
 
   try {
-    // 현재 민원 조회
     const [rows] = await db.query(
       'SELECT * FROM complaints WHERE id = ?', [id]
     );
@@ -27,7 +24,6 @@ const updateStatus = async (req, res) => {
     const complaint = rows[0];
     const currentStatus = complaint.status;
 
-    // State 패턴 - 허용된 전환인지 확인
     if (!transitions[currentStatus].includes(next_status)) {
       return res.status(400).json({
         message: `${currentStatus} 에서 ${next_status} 로 전환 불가`,
@@ -35,12 +31,11 @@ const updateStatus = async (req, res) => {
       });
     }
 
-    // 상태 변경
-    // ASSIGNED 상태면 담당자 id도 저장
     if (next_status === 'ASSIGNED') {
+      const assignedTo = assigned_to || req.user.id;
       await db.query(
         'UPDATE complaints SET status = ?, assigned_to = ? WHERE id = ?',
-        [next_status, req.user.id, id]
+        [next_status, assignedTo, id]
       );
     } else {
       await db.query(
@@ -48,7 +43,7 @@ const updateStatus = async (req, res) => {
         [next_status, id]
       );
     }
-    // 처리 이력 기록
+
     await db.query(
       `INSERT INTO process_history 
        (complaint_id, actor_id, previous_status, next_status, memo)
@@ -67,7 +62,6 @@ const updateStatus = async (req, res) => {
   }
 };
 
-// 처리 이력 조회
 const getHistory = async (req, res) => {
   const { id } = req.params;
 
