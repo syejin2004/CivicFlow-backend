@@ -60,7 +60,7 @@ router.post('/generate-content', auth, async (req, res) => {
 설명: ${description}
 
 반드시 JSON 형식으로만 답하세요:
-{"category":"도로/교통 또는 환경/청소 또는 시설물 또는 안전/재난 또는 기타","title":"민원 제목","content":"공식 민원 내용 (2-3문장)"}`
+{"category":"도로/교통 또는 환경/청소 또는 시설물 또는 안전/재난 또는 기타","title":"민원 제목","content":"공식 민원 내용 (2-3문장)","location":"설명에서 추출한 위치 (없으면 빈 문자열)"}`
         }],
         temperature: 0.3
       })

@@ -47,6 +47,7 @@ export default function AIPhoto() {
       setCategory('');
       setTitle('');
       setContent('');
+      setLocation('');
     };
     reader.readAsDataURL(file);
   };
@@ -92,6 +93,7 @@ export default function AIPhoto() {
         setCategory(result.category);
         setTitle(result.title);
         setContent(result.content);
+        if (result.location) setLocation(result.location);
       } else {
         throw new Error('생성 실패');
       }
@@ -216,11 +218,12 @@ export default function AIPhoto() {
               <div style={{ marginTop: '16px' }}>
                 <label style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginBottom: '8px', color: '#374151' }}>
                   간단한 설명 <span style={{ color: '#e23b45' }}>*</span>
+                  <span style={{ fontSize: '11px', color: '#778090', fontWeight: 400, marginLeft: '6px' }}>위치 포함하면 자동 입력됩니다</span>
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="예: 도로에 큰 구멍이 생겼어요, 골목에 쓰레기가 쌓여있어요"
+                  placeholder="예: 서울시 강남구 테헤란로에 도로 구멍이 생겼어요"
                   style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px', lineHeight: 1.6 }}
                 />
                 <button
@@ -263,7 +266,7 @@ export default function AIPhoto() {
 
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginBottom: '8px', color: '#374151' }}>발생 위치 <span style={{ color: '#e23b45' }}>*</span></label>
-                  <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="예: 인천시 연수구 송도동 123-45" style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit' }} />
+                  <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="예: 서울시 강남구 테헤란로 123" style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit' }} />
                 </div>
 
                 <div style={{ marginBottom: '16px' }}>
