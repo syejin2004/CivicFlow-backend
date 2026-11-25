@@ -49,11 +49,13 @@ const getAllComplaints = async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT c.*, u.username, cat.name as category_name,
-              d.dept_name as department_name
+              d.dept_name as department_name,
+              assignee.username as assigned_username
        FROM complaints c
        LEFT JOIN users u ON c.citizen_id = u.id
        LEFT JOIN categories cat ON c.category_id = cat.id
        LEFT JOIN departments d ON c.department_id = d.id
+       LEFT JOIN users assignee ON c.assigned_to = assignee.id
        ORDER BY c.created_at DESC`
     );
     res.json(rows);
@@ -89,12 +91,14 @@ const getComplaintById = async (req, res) => {
       `SELECT c.*, u.username, cat.name as category_name,
               d.dept_name as department_name,
               a.content as answer_content,
-              a.created_at as answer_created_at
+              a.created_at as answer_created_at,
+              assignee.username as assigned_username
        FROM complaints c
        LEFT JOIN users u ON c.citizen_id = u.id
        LEFT JOIN categories cat ON c.category_id = cat.id
        LEFT JOIN departments d ON c.department_id = d.id
        LEFT JOIN answers a ON c.id = a.complaint_id
+       LEFT JOIN users assignee ON c.assigned_to = assignee.id
        WHERE c.id = ?`,
       [id]
     );

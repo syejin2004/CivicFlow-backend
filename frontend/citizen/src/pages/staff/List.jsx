@@ -66,6 +66,7 @@ export default function List({ setPage, goToDetail }) {
               <th>민원 제목</th>
               <th style={{ width: 110 }}>접수일</th>
               <th style={{ width: 90 }}>분류</th>
+              <th style={{ width: 100 }}>담당자</th>
               <th style={{ width: 80 }}>상태</th>
               <th style={{ width: 60 }}>상세</th>
             </tr>
@@ -73,7 +74,7 @@ export default function List({ setPage, goToDetail }) {
           <tbody>
             {filteredComplaints.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
                   민원이 없습니다.
                 </td>
               </tr>
@@ -86,6 +87,7 @@ export default function List({ setPage, goToDetail }) {
                     <td>{c.title}</td>
                     <td>{c.created_at?.split('T')[0]}</td>
                     <td><span className="s-cat-badge">{c.ai_category || '미분류'}</span></td>
+                    <td>{c.assigned_username || '-'}</td>
                     <td><span className={`sbadge ${cls}`}>{label}</span></td>
                     <td className="tarr">보기 ›</td>
                   </tr>
