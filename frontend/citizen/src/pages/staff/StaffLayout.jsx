@@ -51,7 +51,7 @@ export default function StaffLayout({ onLogout }) {
     notice:     <Notice showToast={showToast} />,
     setting:    <Setting showToast={showToast} theme={theme} setTheme={setTheme} />,
     chat:       <Chat />,
-    'all-list': <AllList />,
+    'all-list': <AllList goToDetail={goToDetail} />,
     assign:     <Assign />,
     team:       <Team />,
   };

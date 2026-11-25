@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { useComplaints } from '../../contexts/ComplaintContext';
+import { useAuth } from '../../contexts/AuthContext';
 import StaffModal from '../../components/staff/StaffModal';
 
+const BASE_URL = 'https://civicflow-production.up.railway.app/api';
+const getToken = () => localStorage.getItem('civicflow_token');
+
 export default function Detail({ setPage, showToast, complaintId }) {
-  const { complaints, updateComplaintStatus, completeComplaint } = useComplaints();
+  const { complaints, updateComplaintStatus, completeComplaint, fetchComplaints } = useComplaints();
+  const { user } = useAuth();
   const [modal, setModal] = useState(null);
   const [content, setContent] = useState('');
   const [nextStatus, setNextStatus] = useState('');
+  const [classifying, setClassifying] = useState(false);
 
   const complaint = complaints.find(c => c.id === complaintId);
 
@@ -25,11 +31,29 @@ export default function Detail({ setPage, showToast, complaintId }) {
     setPage('list');
   };
 
-  const handleStatusChange = async () => {
-    if (!nextStatus || !complaint) return;
-    await updateComplaintStatus(complaint.id, nextStatus);
-    showToast('상태가 변경되었습니다.');
-    setPage('list');
+  const handleAiClassify = async () => {
+    if (!complaint) return;
+    setClassifying(true);
+    try {
+      const res = await fetch(`${BASE_URL}/complaints/${complaint.id}/classify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchComplaints();
+        showToast('AI 분류가 완료되었습니다!');
+      } else {
+        showToast(data.message || 'AI 분류 실패');
+      }
+    } catch (e) {
+      showToast('AI 분류 실패');
+    } finally {
+      setClassifying(false);
+    }
   };
 
   const getStatusLabel = (status) => {
@@ -115,6 +139,20 @@ export default function Detail({ setPage, showToast, complaintId }) {
                 <span className="dr-val">{v}</span>
               </div>
             ))}
+            {complaint.ai_reason && (
+              <div style={{ marginTop: '10px', padding: '10px', background: '#f0f5ff', borderRadius: '6px', fontSize: '12px', color: '#1555a4', lineHeight: 1.6 }}>
+                💡 {complaint.ai_reason}
+              </div>
+            )}
+            {user?.role === 'manager' && (
+              <button
+                onClick={handleAiClassify}
+                disabled={classifying}
+                style={{ marginTop: '12px', width: '100%', padding: '8px', background: complaint.ai_category ? '#778090' : '#1555a4', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {classifying ? 'AI 분류 중...' : complaint.ai_category ? 'AI 재분류하기' : 'AI 분류하기'}
+              </button>
+            )}
           </div>
           <div className="s-detail-card">
             <h3>처리 내용</h3>
