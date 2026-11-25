@@ -4,14 +4,14 @@ const db = require('../config/db');
 
 // 회원가입
 const register = async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, role, department_id } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await db.query(
-      'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
-      [username, email, hashedPassword, role || 'CITIZEN']
+      'INSERT INTO users (username, email, password, role, department_id) VALUES (?, ?, ?, ?, ?)',
+      [username, email, hashedPassword, role || 'CITIZEN', department_id || null]
     );
 
     res.status(201).json({ message: '회원가입 성공' });
@@ -54,7 +54,8 @@ const login = async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        department_id: user.department_id
       }
     });
   } catch (err) {
@@ -66,7 +67,9 @@ const login = async (req, res) => {
 const getUsers = async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT id, username, email, role FROM users'
+      `SELECT u.id, u.username, u.email, u.role, u.department_id, d.dept_name
+       FROM users u
+       LEFT JOIN departments d ON u.department_id = d.id`
     );
     res.json(rows);
   } catch (err) {

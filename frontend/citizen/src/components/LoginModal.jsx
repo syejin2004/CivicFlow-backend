@@ -2,12 +2,21 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
+const DEPARTMENTS = [
+  { id: 7, name: '도로관리과' },
+  { id: 8, name: '교통지도과' },
+  { id: 9, name: '환경미화과' },
+  { id: 10, name: '생활민원과' },
+  { id: 11, name: '시설관리과' },
+  { id: 12, name: '민원실' },
+];
+
 function RegisterSteps({ onLoginClick }) {
   const { register } = useAuth();
   const [step, setStep] = useState(1);
   const [allChecked, setAllChecked] = useState(false);
   const [form, setForm] = useState({
-    username: '', email: '', password: '', passwordConfirm: '', role: 'CITIZEN'
+    username: '', email: '', password: '', passwordConfirm: '', role: 'CITIZEN', department_id: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,12 +42,17 @@ function RegisterSteps({ onLoginClick }) {
       setError('비밀번호가 일치하지 않습니다.');
       return;
     }
+    if (form.role === 'OFFICER' && !form.department_id) {
+      setError('부서를 선택해주세요.');
+      return;
+    }
     setLoading(true);
     const result = await register({
       name: form.username,
       email: form.email,
       password: form.password,
-      role: form.role
+      role: form.role,
+      department_id: form.department_id || null
     });
     setLoading(false);
     if (result.success) {
@@ -69,15 +83,15 @@ function RegisterSteps({ onLoginClick }) {
             <label className="terms-item"><input type="checkbox" className="term-chk" /> 마케팅 정보 수신 동의<span className="opt">(선택)</span></label>
           </div>
           <div className="reg-nav">
-              <button className="btn-next" onClick={() => {
-                  const required = document.querySelectorAll('.term-chk');
-                  const checked = Array.from(required).slice(0, 3).every(c => c.checked);
-                  if (!checked) {
-                    alert('필수 약관에 동의해주세요.');
-                    return;
-                  }
-                  setStep(2);
-                }}>다음 단계</button>
+            <button className="btn-next" onClick={() => {
+              const required = document.querySelectorAll('.term-chk');
+              const checked = Array.from(required).slice(0, 3).every(c => c.checked);
+              if (!checked) {
+                alert('필수 약관에 동의해주세요.');
+                return;
+              }
+              setStep(2);
+            }}>다음 단계</button>
           </div>
         </div>
       )}
@@ -94,9 +108,21 @@ function RegisterSteps({ onLoginClick }) {
             <select name="role" value={form.role} onChange={handleChange}>
               <option value="CITIZEN">시민</option>
               <option value="OFFICER">민원 담당자</option>
-              <option value="ADMIN">부서 관리자</option>
             </select>
           </div>
+
+          {form.role === 'OFFICER' && (
+            <div className="reg-form-group">
+              <label>소속 부서 <span className="req">*</span></label>
+              <select name="department_id" value={form.department_id} onChange={handleChange}>
+                <option value="">부서를 선택하세요</option>
+                {DEPARTMENTS.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="reg-form-group">
             <label>이름 <span className="req">*</span></label>
             <input type="text" name="username" value={form.username} onChange={handleChange} placeholder="이름을 입력하세요" />
