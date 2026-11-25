@@ -14,6 +14,7 @@ export default function AIPhoto() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [description, setDescription] = useState('');
 
   const [category, setCategory] = useState('');
   const [title, setTitle] = useState('');
@@ -46,7 +47,6 @@ export default function AIPhoto() {
       setCategory('');
       setTitle('');
       setContent('');
-      setLocation('');
     };
     reader.readAsDataURL(file);
   };
@@ -70,57 +70,33 @@ export default function AIPhoto() {
       alert('사진을 먼저 업로드해주세요.');
       return;
     }
+    if (!description.trim()) {
+      alert('간단한 설명을 입력해주세요.');
+      return;
+    }
     setIsAnalyzing(true);
     try {
-      // 1. 이미지를 Cloudinary에 업로드
       const token = localStorage.getItem('civicflow_token');
-      const formData = new FormData();
-      formData.append('images', uploadedFile);
-
-      const uploadRes = await fetch(`${BASE_URL}/complaints/temp-upload`, {
+      const res = await fetch(`${BASE_URL}/complaints/generate-content`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ description })
       });
 
-      if (uploadRes.ok) {
-        const uploadData = await uploadRes.json();
-        const imageUrl = uploadData.url;
-
-        // 2. AI 분석
-        const analyzeRes = await fetch(`${BASE_URL}/complaints/analyze-image`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ imageUrl })
-        });
-
-        if (analyzeRes.ok) {
-          const result = await analyzeRes.json();
-          setAiResult({ ...result, isMock: false });
-          setCategory(result.category);
-          setTitle(result.title);
-          setContent(result.content);
-        } else {
-          throw new Error('분석 실패');
-        }
+      if (res.ok) {
+        const result = await res.json();
+        setAiResult(result);
+        setCategory(result.category);
+        setTitle(result.title);
+        setContent(result.content);
       } else {
-        throw new Error('업로드 실패');
+        throw new Error('생성 실패');
       }
     } catch (e) {
-      // fallback: mock 결과
-      const mockResult = {
-        category: '기타',
-        title: '생활 불편 민원',
-        content: '현장 사진을 첨부하여 민원을 신고합니다.',
-        isMock: true
-      };
-      setAiResult(mockResult);
-      setCategory(mockResult.category);
-      setTitle(mockResult.title);
-      setContent(mockResult.content);
+      alert('AI 생성 실패. 다시 시도해주세요.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -130,6 +106,7 @@ export default function AIPhoto() {
     setUploadedImage(null);
     setUploadedFile(null);
     setAiResult(null);
+    setDescription('');
     setCategory('');
     setTitle('');
     setContent('');
@@ -186,7 +163,7 @@ export default function AIPhoto() {
         </div>
         <h1 className="pg-title">AI 민원 자동 작성</h1>
         <p className="pg-desc" style={{ marginBottom: '28px' }}>
-          현장 사진을 업로드하고 AI 분석을 통해 민원 내용을 자동으로 작성할 수 있습니다.
+          현장 사진과 간단한 설명을 입력하면 AI가 민원 내용을 자동으로 작성해 드립니다.
         </p>
 
         <div style={{ background: '#fff', border: '1px solid #e2e6ec', borderRadius: '10px', padding: '18px 28px', marginBottom: '28px', display: 'flex', alignItems: 'center' }}>
@@ -209,7 +186,7 @@ export default function AIPhoto() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           <div style={{ background: '#fff', border: '1px solid #e2e6ec', borderRadius: '10px', padding: '24px' }}>
             <div style={{ fontSize: '16px', fontWeight: 800, color: '#172238', marginBottom: '8px' }}>1. 사진 업로드</div>
-            <p style={{ fontSize: '13px', color: '#778090', margin: '0 0 16px' }}>민원으로 접수할 현장 사진을 업로드해 주세요.</p>
+            <p style={{ fontSize: '13px', color: '#778090', margin: '0 0 16px' }}>민원 현장 사진을 업로드하고 간단한 설명을 입력해주세요.</p>
 
             {!uploadedImage ? (
               <div
@@ -225,53 +202,52 @@ export default function AIPhoto() {
               </div>
             ) : (
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '8px' }}>업로드한 사진</div>
                 <div style={{ position: 'relative' }}>
-                  <img src={uploadedImage} alt="업로드된 사진" style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #e2e6ec' }} />
+                  <img src={uploadedImage} alt="업로드된 사진" style={{ width: '100%', maxHeight: '250px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #e2e6ec' }} />
                   <button onClick={(e) => { e.stopPropagation(); handleRemoveImage(); }} style={{ position: 'absolute', top: '8px', right: '8px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,.7)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                 </div>
-                <button onClick={() => fileInputRef.current?.click()} style={{ width: '100%', marginTop: '12px', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', color: '#374151' }}>다른 사진 선택</button>
+                <button onClick={() => fileInputRef.current?.click()} style={{ width: '100%', marginTop: '8px', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', fontSize: '13px', cursor: 'pointer' }}>다른 사진 선택</button>
               </div>
             )}
 
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={handleFileInputChange} />
 
-            {uploadedImage && !aiResult && (
-              <button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing}
-                style={{ width: '100%', marginTop: '16px', padding: '14px', border: 'none', borderRadius: '8px', background: isAnalyzing ? '#9ca3af' : '#1555a4', color: '#fff', fontSize: '14px', fontWeight: 800, cursor: isAnalyzing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              >
-                {isAnalyzing ? (
-                  <><span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></span>AI가 분석하는 중...</>
-                ) : <>AI 분석 시작</>}
-              </button>
+            {uploadedImage && (
+              <div style={{ marginTop: '16px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginBottom: '8px', color: '#374151' }}>
+                  간단한 설명 <span style={{ color: '#e23b45' }}>*</span>
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="예: 도로에 큰 구멍이 생겼어요, 골목에 쓰레기가 쌓여있어요"
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', resize: 'vertical', minHeight: '80px', lineHeight: 1.6 }}
+                />
+                <button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing}
+                  style={{ width: '100%', marginTop: '12px', padding: '14px', border: 'none', borderRadius: '8px', background: isAnalyzing ? '#9ca3af' : '#1555a4', color: '#fff', fontSize: '14px', fontWeight: 800, cursor: isAnalyzing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  {isAnalyzing ? (
+                    <><span style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></span>AI가 작성하는 중...</>
+                  ) : <>AI 민원 내용 자동 작성</>}
+                </button>
+              </div>
             )}
           </div>
 
           <div style={{ background: '#fff', border: '1px solid #e2e6ec', borderRadius: '10px', padding: '24px' }}>
-            <div style={{ fontSize: '16px', fontWeight: 800, color: '#172238', marginBottom: '8px' }}>
-              2. AI 분석 결과 {aiResult?.isMock && <span style={{ fontSize: '11px', fontWeight: 600, color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '10px', marginLeft: '6px' }}>참고용</span>}
-            </div>
-            <p style={{ fontSize: '13px', color: '#778090', margin: '0 0 16px' }}>AI가 분석한 결과를 확인하고 수정할 수 있습니다.</p>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: '#172238', marginBottom: '8px' }}>2. AI 작성 결과</div>
+            <p style={{ fontSize: '13px', color: '#778090', margin: '0 0 16px' }}>AI가 작성한 내용을 확인하고 수정할 수 있습니다.</p>
 
             {!aiResult && !isAnalyzing && (
-              <div style={{ padding: '48px 20px', textAlign: 'center', color: '#b0b8c4', fontSize: '13px' }}>사진을 업로드하고 AI 분석을 시작해주세요.</div>
+              <div style={{ padding: '48px 20px', textAlign: 'center', color: '#b0b8c4', fontSize: '13px' }}>
+                사진을 업로드하고 설명을 입력한 후<br />AI 자동 작성 버튼을 눌러주세요.
+              </div>
             )}
 
             {aiResult && (
               <div>
-                {aiResult.tags && aiResult.tags.length > 0 && (
-                  <div style={{ background: '#f0f5ff', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '12px', color: '#1555a4', fontWeight: 700, marginBottom: '6px' }}>AI 감지 태그</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {aiResult.tags.map((tag, i) => (
-                        <span key={i} style={{ fontSize: '11px', background: '#e9f1fc', color: '#1555a4', padding: '2px 8px', borderRadius: '10px' }}>{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginBottom: '8px', color: '#374151' }}>민원 유형 <span style={{ color: '#e23b45' }}>*</span></label>
                   <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit' }}>

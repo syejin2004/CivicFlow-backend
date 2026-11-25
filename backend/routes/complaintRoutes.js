@@ -41,6 +41,40 @@ router.post('/analyze-image', auth, async (req, res) => {
   }
 });
 
+// Groq 민원 내용 자동 생성
+router.post('/generate-content', auth, async (req, res) => {
+  const { description } = req.body;
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [{
+          role: 'user',
+          content: `다음 민원 설명을 바탕으로 공식 민원 내용을 작성해주세요.
+
+설명: ${description}
+
+반드시 JSON 형식으로만 답하세요:
+{"category":"도로/교통 또는 환경/청소 또는 시설물 또는 안전/재난 또는 기타","title":"민원 제목","content":"공식 민원 내용 (2-3문장)"}`
+        }],
+        temperature: 0.3
+      })
+    });
+    const data = await response.json();
+    const text = data.choices[0].message.content;
+    const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ message: '생성 실패', error: e.message });
+  }
+});
+
 // 상세 조회 (전체)
 router.get('/:id', auth, getComplaintById);
 
