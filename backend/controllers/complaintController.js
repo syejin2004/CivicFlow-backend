@@ -20,6 +20,8 @@ const createComplaint = async (req, res) => {
   const citizen_id = req.user.id;
   const { aiCategory, aiDepartment, aiReason } = sanitizeAiRecommendation(req.body);
 
+  const imageUrls = req.files ? req.files.map(f => f.path).join(',') : null;
+
   try {
     if (category_name !== undefined) {
       try {
@@ -32,9 +34,9 @@ const createComplaint = async (req, res) => {
 
     const [result] = await db.query(
       `INSERT INTO complaints
-       (citizen_id, title, content, location, category_id, status, ai_category, ai_department, ai_reason)
-       VALUES (?, ?, ?, ?, ?, 'SUBMITTED', ?, ?, ?)`,
-      [citizen_id, title, content, location, category_id, aiCategory, aiDepartment, aiReason]
+       (citizen_id, title, content, location, category_id, status, ai_category, ai_department, ai_reason, images)
+       VALUES (?, ?, ?, ?, ?, 'SUBMITTED', ?, ?, ?, ?)`,
+      [citizen_id, title, content, location, category_id, aiCategory, aiDepartment, aiReason, imageUrls]
     );
 
     res.status(201).json({ message: '민원 접수 완료', id: result.insertId });
