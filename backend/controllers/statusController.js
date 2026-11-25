@@ -36,11 +36,18 @@ const updateStatus = async (req, res) => {
     }
 
     // 상태 변경
-    await db.query(
-      'UPDATE complaints SET status = ? WHERE id = ?',
-      [next_status, id]
-    );
-
+    // ASSIGNED 상태면 담당자 id도 저장
+    if (next_status === 'ASSIGNED') {
+      await db.query(
+        'UPDATE complaints SET status = ?, assigned_to = ? WHERE id = ?',
+        [next_status, req.user.id, id]
+      );
+    } else {
+      await db.query(
+        'UPDATE complaints SET status = ? WHERE id = ?',
+        [next_status, id]
+      );
+    }
     // 처리 이력 기록
     await db.query(
       `INSERT INTO process_history 
